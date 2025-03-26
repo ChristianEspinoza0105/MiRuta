@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -14,19 +15,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyComposeScreen()
-        }
-    }
-}
 
-@Composable
-fun MyComposeScreen() {
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Text(text = "¡Hola, Prueba Jetpack Compose!")
-        Button(onClick = { }) {
-            Text("Presionar")
         }
     }
 }
@@ -34,5 +23,5 @@ fun MyComposeScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewScreen() {
-    MyComposeScreen()
+
 }
