@@ -24,7 +24,7 @@ fun MyComposeScreen() {
     Column(
         modifier = Modifier.padding(16.dp)
     ) {
-        Text(text = "¡Hola, Jetpack Compose!")
+        Text(text = "¡Hola, Prueba Jetpack Compose!")
         Button(onClick = { }) {
             Text("Presionar")
         }
