@@ -42,7 +42,7 @@ fun BottomNavigationBar(navController: NavController) {
                         Image(
                             painter = painterResource(id = if (isSelected) screen.selectedIcon else screen.icon),
                             contentDescription = screen.title,
-                            modifier = Modifier.size(60.dp)
+                            modifier = Modifier.size(40.dp)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                     }
