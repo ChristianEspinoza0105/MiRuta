@@ -1,17 +1,12 @@
 package com.example.miruta.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+import com.example.miruta.ui.navigation.BottomNavScreen
 
 @Composable
-fun ProfileScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Profile Screen", style = MaterialTheme.typography.h4)
-    }
+fun ProfileScreen(navController: NavController) {
+
 }

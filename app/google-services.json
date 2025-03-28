@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33683948183",
+    "project_id": "miruta-egae",
+    "storage_bucket": "miruta-egae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33683948183:android:a225e71ac545874446dfd2",
+        "android_client_info": {
+          "package_name": "com.example.miruta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7b2I7V76V-1Qxiz7_hfeboH_3DVFiwzE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

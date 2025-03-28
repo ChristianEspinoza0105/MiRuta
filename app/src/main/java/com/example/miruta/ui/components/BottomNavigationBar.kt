@@ -22,13 +22,13 @@ import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 
 @Composable
-fun BottomNavigationBar(navController: NavController) {
+fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
     val items = listOf(
         BottomNavScreen.Lines,
         BottomNavScreen.Community,
         BottomNavScreen.Explore,
         BottomNavScreen.MyRoute,
-        BottomNavScreen.Profile
+        BottomNavScreen.Auth(isUserLoggedIn)
     )
 
     BottomNavigation(
@@ -83,7 +83,10 @@ fun BottomNavigationBar(navController: NavController) {
                 alwaysShowLabel = true,
                 onClick = {
                     if (!isSelected) {
-                        navController.navigate(screen.route)
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 },
                 selectedContentColor = Color(0xFF00933B),

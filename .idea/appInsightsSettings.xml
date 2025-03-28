@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.miruta" />
+                  <option name="mobileSdkAppId" value="1:33683948183:android:a225e71ac545874446dfd2" />
+                  <option name="projectId" value="miruta-egae" />
+                  <option name="projectNumber" value="33683948183" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
