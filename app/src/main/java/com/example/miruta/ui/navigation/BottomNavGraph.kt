@@ -28,6 +28,7 @@ fun BottomNavGraph(
         composable(BottomNavScreen.Community.route) { CommunityScreen() }
         composable(BottomNavScreen.Lines.route) { LinesScreen() }
         composable(BottomNavScreen.MyRoute.route) { MyRouteScreen() }
+        composable("LoginScreen") { LoginScreen(navController) }
         composable(BottomNavScreen.Auth(isUserLoggedIn).route) {
             if (isUserLoggedIn) {
                 ProfileScreen(navController)
@@ -35,6 +36,5 @@ fun BottomNavGraph(
                 LoginScreen(navController)
             }
         }
-        composable("LoginScreen") { LoginScreen(navController) }
     }
 }
