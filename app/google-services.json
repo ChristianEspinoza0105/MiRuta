@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "986661716499",
+    "project_id": "mi-ruta-79e19",
+    "storage_bucket": "mi-ruta-79e19.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986661716499:android:5b86cdc2aa91886e16f5e6",
+        "android_client_info": {
+          "package_name": "com.example.miruta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPJI2_S8YJbbfrUE0lCJiyCuTu_3Qor7w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
