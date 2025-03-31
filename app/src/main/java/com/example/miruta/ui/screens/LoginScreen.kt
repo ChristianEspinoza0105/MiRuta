@@ -15,7 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(
+fun LogiinScreen(
     navController: NavController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {

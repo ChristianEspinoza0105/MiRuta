@@ -11,7 +11,7 @@ import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.screens.CommunityScreen
 import com.example.miruta.ui.screens.ExploreScreen
 import com.example.miruta.ui.screens.LinesScreen
-import com.example.miruta.ui.screens.LoginScreen
+import com.example.miruta.ui.screens.Login2Screen
 import com.example.miruta.ui.screens.MyRouteScreen
 import com.example.miruta.ui.screens.ProfileScreen
 import com.example.miruta.ui.viewmodel.AuthViewModel
@@ -28,12 +28,12 @@ fun BottomNavGraph(
         composable(BottomNavScreen.Community.route) { CommunityScreen() }
         composable(BottomNavScreen.Lines.route) { LinesScreen() }
         composable(BottomNavScreen.MyRoute.route) { MyRouteScreen() }
-        composable("LoginScreen") { LoginScreen(navController) }
+        composable("LoginScreen") { Login2Screen(navController) }
         composable(BottomNavScreen.Auth(isUserLoggedIn).route) {
             if (isUserLoggedIn) {
                 ProfileScreen(navController)
             } else {
-                LoginScreen(navController)
+                Login2Screen(navController)
             }
         }
     }

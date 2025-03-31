@@ -7,10 +7,6 @@ plugins {
     kotlin("kapt")
     }
 
-kapt {
-    correctErrorTypes = true
-}
-
 android {
     namespace = "com.example.miruta"
     compileSdk = 35
