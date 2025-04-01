@@ -26,6 +26,11 @@ val AppTypography = Typography(
         fontWeight = FontWeight.ExtraBold,
         fontSize = 50.sp
     ),
+    h2 = TextStyle(
+        fontFamily = PoppinsFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp
+    ),
     button = TextStyle(
         fontFamily = PoppinsFontFamily,
         fontWeight = FontWeight.Bold,
