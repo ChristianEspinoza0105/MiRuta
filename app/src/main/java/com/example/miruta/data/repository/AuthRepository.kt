@@ -8,6 +8,7 @@ class AuthRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
+
     fun loginUser(email: String, password: String, onResult: (Boolean, String?) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -36,5 +37,9 @@ class AuthRepository @Inject constructor(
             .addOnFailureListener {
                 onResult(false, it.message)
             }
+    }
+
+    fun logoutUser() {
+        auth.signOut()
     }
 }

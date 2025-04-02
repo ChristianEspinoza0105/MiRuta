@@ -1,25 +1,34 @@
 package com.example.miruta.ui.screens
 
-import android.widget.Toast
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -31,19 +40,19 @@ import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(
+fun RegisterDriverScreen(
     navController: NavController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    val loginState by authViewModel.loginState.collectAsState()
-    val context = LocalContext.current
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var rute by remember { mutableStateOf("") }
+    var plates by remember { mutableStateOf("") }
 
     ConstraintLayout(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
         val (header, form, image) = createRefs()
@@ -68,7 +77,7 @@ fun LoginScreen(
                 val titleFontSize = (screenWidth.value * 0.10).sp
                 val subtitleFontSize = (screenWidth.value * 0.04).sp
                 Text(
-                    text = "Welcome Back",
+                    text = "Welcome",
                     color = Color.White,
                     style = TextStyle(
                         fontFamily = AppTypography.h1.fontFamily,
@@ -77,10 +86,10 @@ fun LoginScreen(
                     ),
                     modifier = Modifier
                         .align(Alignment.Start)
-                        .padding(start = 40.dp, top = 30.dp)
+                        .padding(start = 40.dp, top = 35.dp)
                 )
                 Text(
-                    text = "Always on route. Log in.",
+                    text = "Always on route. Sign in.",
                     color = Color.White,
                     style = TextStyle(
                         fontFamily = AppTypography.body1.fontFamily,
@@ -110,7 +119,7 @@ fun LoginScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Log In",
+                    text = "Sign in",
                     color = Color(0xFF00933B),
                     style = TextStyle(
                         fontFamily = AppTypography.h2.fontFamily,
@@ -123,11 +132,115 @@ fun LoginScreen(
                 )
 
                 OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = {
+                        Text(
+                            text = "Name",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = {
+                        Text(
+                            text = "Phone number",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     label = {
                         Text(
-                            text = "Correo electrónico",
+                            text = "Email",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                OutlinedTextField(
+                    value = rute,
+                    onValueChange = { rute = it },
+                    label = {
+                        Text(
+                            text = "Rute",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                OutlinedTextField(
+                    value = plates,
+                    onValueChange = { plates = it },
+                    label = {
+                        Text(
+                            text = "Plates",
                             style = TextStyle(
                                 color = Color.DarkGray,
                                 fontFamily = AppTypography.body1.fontFamily,
@@ -153,7 +266,7 @@ fun LoginScreen(
                     onValueChange = { password = it },
                     label = {
                         Text(
-                            text = "Contraseña",
+                            text = "Password",
                             style = TextStyle(
                                 color = Color.DarkGray,
                                 fontFamily = AppTypography.body1.fontFamily,
@@ -175,51 +288,9 @@ fun LoginScreen(
                     )
                 )
 
-                Text(
-                    text = "Forgot your password?",
-                    color = Color.DarkGray,
-                    style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
-                        fontSize = 16.sp
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 20.dp)
-                )
-
                 Button(
                     onClick = {
-                        val trimmedEmail = email.trim()
-                        val trimmedPassword = password.trim()
 
-                        if (trimmedEmail.isEmpty()) {
-                            Toast.makeText(
-                                context,
-                                "El correo electrónico no puede estar vacío.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
-                            Toast.makeText(
-                                context,
-                                "Correo electrónico no válido.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        if (trimmedPassword.isEmpty()) {
-                            Toast.makeText(
-                                context,
-                                "La contraseña no puede estar vacía.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        if (trimmedEmail.isNotEmpty() && trimmedPassword.isNotEmpty() &&
-                            trimmedEmail.contains("@") && trimmedEmail.contains(".") &&
-                            trimmedPassword.isNotEmpty()) {
-                            authViewModel.login(trimmedEmail, trimmedPassword)
-                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                     modifier = Modifier
@@ -227,7 +298,7 @@ fun LoginScreen(
                         .padding(top = 20.dp, start = 45.dp, end = 45.dp)
                 ) {
                     Text(
-                        text = "Log in",
+                        text = "Sign in",
                         color = Color.White,
                         style = TextStyle(
                             fontFamily = AppTypography.button.fontFamily,
@@ -236,51 +307,18 @@ fun LoginScreen(
                         )
                     )
                 }
-
-                Text(
-                    text = "Don’t have an account? Sign in",
-                    color = Color.DarkGray,
-                    style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
-                        fontSize = 16.sp
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 20.dp)
-                        .clickable {
-                            navController.navigate("RegisterScreen")
-                        }
-                )
-
-                loginState?.let {
-                    Text(
-                        text = it,
-                        color = if (it == "Login exitoso") Color.Green else Color.Red,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-
-                    if (it == "Login exitoso") {
-                        LaunchedEffect(it) {
-                            Log.d("LoginScreen", "Navegando a ProfileScreen después del login exitoso")
-                            navController.navigate("ProfileScreen") {
-                                popUpTo("LoginScreen") { inclusive = true }
-                            }
-                        }
-                    }
-                }
             }
         }
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
 
-        val imageWidth = screenWidth * 0.5f
+        val imageWidth = screenWidth * 0.4f
         val imageHeight = screenHeight * 0.2f
-        val guideline = createGuidelineFromTop(0.090f)
+        val guideline = createGuidelineFromTop(0.060f)
         val guidelineStart = createGuidelineFromStart(0.5f)
         Image(
-            painter = painterResource(id = R.drawable.ic_routelogin),
+            painter = painterResource(id = R.drawable.ic_driver),
             contentDescription = "Logo",
             modifier = Modifier
                 .constrainAs(image) {

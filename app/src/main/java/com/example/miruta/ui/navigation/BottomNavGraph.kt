@@ -7,13 +7,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.screens.CommunityScreen
 import com.example.miruta.ui.screens.ExploreScreen
 import com.example.miruta.ui.screens.LinesScreen
-import com.example.miruta.ui.screens.Login2Screen
+import com.example.miruta.ui.screens.LoginScreen
 import com.example.miruta.ui.screens.MyRouteScreen
 import com.example.miruta.ui.screens.ProfileScreen
+import com.example.miruta.ui.screens.RegisterDriverScreen
+import com.example.miruta.ui.screens.RegisterScreen
 import com.example.miruta.ui.viewmodel.AuthViewModel
 @Composable
 fun BottomNavGraph(
@@ -28,12 +29,15 @@ fun BottomNavGraph(
         composable(BottomNavScreen.Community.route) { CommunityScreen() }
         composable(BottomNavScreen.Lines.route) { LinesScreen() }
         composable(BottomNavScreen.MyRoute.route) { MyRouteScreen() }
-        composable("LoginScreen") { Login2Screen(navController) }
+        composable("RegisterScreen") { RegisterScreen(navController) }
+        composable("LoginScreen") { LoginScreen(navController) }
+        composable("RegisterDriverScreen") { RegisterDriverScreen(navController) }
         composable(BottomNavScreen.Auth(isUserLoggedIn).route) {
             if (isUserLoggedIn) {
                 ProfileScreen(navController)
             } else {
-                Login2Screen(navController)
+                LoginScreen(navController)
+
             }
         }
     }

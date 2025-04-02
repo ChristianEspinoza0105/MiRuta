@@ -1,14 +1,15 @@
 package com.example.miruta.ui.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.miruta.data.repository.AuthRepository
-import androidx.compose.runtime.State
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -16,38 +17,45 @@ class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _loginState = mutableStateOf<String?>(null)
-    val loginState: State<String?> = _loginState
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+
+    private val _loginState = MutableStateFlow<String?>(null)
+    val loginState: StateFlow<String?> = _loginState
 
     private val _isUserLoggedIn = MutableStateFlow(false)
     val isUserLoggedIn: StateFlow<Boolean> = _isUserLoggedIn
+
+    private val _userData = MutableStateFlow<Map<String, Any>?>(null)
+    val userData: StateFlow<Map<String, Any>?> = _userData
 
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
         val user = auth.currentUser
         _isUserLoggedIn.value = user != null
         Log.d("AuthViewModel", "Estado de usuario: ${if (_isUserLoggedIn.value) "Conectado" else "Desconectado"}")
+
+        if (user != null) {
+            fetchUserData(user.uid)
+        } else {
+            _userData.value = null
+        }
     }
 
     init {
-        // Configurar el observador del estado de autenticación
-        FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
+        auth.addAuthStateListener(authStateListener)
     }
 
-    // Llamado para verificar si el usuario está autenticado
-    private fun checkUserLoggedIn() {
-        val user = FirebaseAuth.getInstance().currentUser
-        _isUserLoggedIn.value = user != null
-        Log.d("AuthViewModel", "Estado de usuario: ${if (_isUserLoggedIn.value) "Conectado" else "Desconectado"}")
-    }
-
-    // Login
     fun login(email: String, password: String) {
         Log.d("AuthViewModel", "Intentando iniciar sesión con correo: $email")
         authRepository.loginUser(email, password) { success, message ->
             if (success) {
                 _loginState.value = "Login exitoso"
                 Log.d("AuthViewModel", "Inicio de sesión exitoso para: $email")
-                checkUserLoggedIn()
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user != null) {
+                    fetchUserData(user.uid)
+                }
+                _isUserLoggedIn.value = true
             } else {
                 _loginState.value = message
                 Log.e("AuthViewModel", "Error al iniciar sesión: $message")
@@ -55,21 +63,31 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // Logout
     fun logout() {
-        Log.d("AuthViewModel", "Cerrando sesión del usuario actual")
-        FirebaseAuth.getInstance().signOut()
+        authRepository.logoutUser()
         _isUserLoggedIn.value = false
     }
 
-    // Limpiar el observador cuando el ViewModel es destruido
-    override fun onCleared() {
-        super.onCleared()
-        FirebaseAuth.getInstance().removeAuthStateListener(authStateListener)
+    private fun fetchUserData(userId: String) {
+        viewModelScope.launch {
+            firestore.collection("users").document(userId).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        _userData.value = document.data
+                        Log.d("AuthViewModel", "Datos del usuario cargados: ${document.data}")
+                    } else {
+                        Log.d("AuthViewModel", "No se encontraron datos del usuario.")
+                        _userData.value = null
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("AuthViewModel", "Error obteniendo datos del usuario", exception)
+                }
+        }
     }
 
-    // Actualizar el estado de autenticación en la aplicación
-    fun updateUserLoggedInStatus(isLoggedIn: Boolean) {
-        _isUserLoggedIn.value = isLoggedIn
+    override fun onCleared() {
+        super.onCleared()
+        auth.removeAuthStateListener(authStateListener)
     }
 }
