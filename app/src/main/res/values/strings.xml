@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">MiRuta</string>
     <string name="Explore">Explore</string>
+    <string name="google_maps_key">Google Maps Key</string>
 </resources>
