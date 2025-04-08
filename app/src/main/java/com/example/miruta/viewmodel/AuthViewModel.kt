@@ -26,6 +26,9 @@ class AuthViewModel @Inject constructor(
     private val _isUserLoggedIn = MutableStateFlow(false)
     val isUserLoggedIn: StateFlow<Boolean> = _isUserLoggedIn
 
+    private val _registerState = MutableStateFlow<String?>(null)
+    val registerState: StateFlow<String?> = _registerState
+
     private val _userData = MutableStateFlow<Map<String, Any>?>(null)
     val userData: StateFlow<Map<String, Any>?> = _userData
 
@@ -45,17 +48,25 @@ class AuthViewModel @Inject constructor(
         auth.addAuthStateListener(authStateListener)
     }
 
+    fun register(email: String, password: String, name: String, phone: String) {
+        viewModelScope.launch {
+            authRepository.registerUser(email, password, name, phone) { success, message ->
+                if (success) {
+                    _registerState.value = "Registro exitoso"
+                    fetchUserData(auth.currentUser?.uid ?: "")
+                } else {
+                    _registerState.value = message
+                }
+            }
+        }
+    }
+
     fun login(email: String, password: String) {
         Log.d("AuthViewModel", "Intentando iniciar sesión con correo: $email")
         authRepository.loginUser(email, password) { success, message ->
             if (success) {
                 _loginState.value = "Login exitoso"
                 Log.d("AuthViewModel", "Inicio de sesión exitoso para: $email")
-                val user = FirebaseAuth.getInstance().currentUser
-                if (user != null) {
-                    fetchUserData(user.uid)
-                }
-                _isUserLoggedIn.value = true
             } else {
                 _loginState.value = message
                 Log.e("AuthViewModel", "Error al iniciar sesión: $message")

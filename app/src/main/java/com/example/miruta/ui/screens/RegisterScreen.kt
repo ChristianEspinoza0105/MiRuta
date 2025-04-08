@@ -1,5 +1,7 @@
 package com.example.miruta.ui.screens
 
+import android.util.Patterns
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +39,8 @@ authViewModel: AuthViewModel = hiltViewModel()
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val registerState by authViewModel.registerState.collectAsState()
 
     ConstraintLayout(
         modifier = Modifier.fillMaxSize()
@@ -222,9 +227,22 @@ authViewModel: AuthViewModel = hiltViewModel()
                     )
                 )
 
+                val registerState = remember { mutableStateOf<String?>(null) }
+
                 Button(
                     onClick = {
+                        val trimmedEmail = email.trim()
+                        val trimmedPassword = password.trim()
+                        val trimmedName = name.trim()
+                        val trimmedPhone = phone.trim()
 
+                        when {
+                            trimmedName.isEmpty() -> Toast.makeText(context, "Nombre requerido", Toast.LENGTH_SHORT).show()
+                            trimmedPhone.isEmpty() -> Toast.makeText(context, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            !isValidEmail(trimmedEmail) -> Toast.makeText(context, "Email inválido", Toast.LENGTH_SHORT).show()
+                            trimmedPassword.length < 6 -> Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                            else -> authViewModel.register(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone)
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                     modifier = Modifier
@@ -232,7 +250,7 @@ authViewModel: AuthViewModel = hiltViewModel()
                         .padding(top = 20.dp, start = 45.dp, end = 45.dp)
                 ) {
                     Text(
-                        text = "Sign in",
+                        text = "Sign up",
                         color = Color.White,
                         style = TextStyle(
                             fontFamily = AppTypography.button.fontFamily,
@@ -240,6 +258,18 @@ authViewModel: AuthViewModel = hiltViewModel()
                             fontSize = 24.sp
                         )
                     )
+                    registerState.value?.let { state ->
+                        LaunchedEffect(state) {
+                            if (state == "Registro exitoso") {
+                                navController.navigate("ProfileScreen") {
+                                    popUpTo("RegisterScreen") { inclusive = true }
+                                }
+                            } else {
+                                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
+                                registerState.value = null
+                            }
+                        }
+                    }
                 }
 
                 val configuration = LocalConfiguration.current
@@ -285,4 +315,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                 .zIndex(1f)
         )
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

@@ -49,6 +49,7 @@ dependencies {
     //Maps
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
     implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation ("com.google.android.gms:play-services-base:18.2.0")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
@@ -71,15 +72,15 @@ dependencies {
 
     // Jetpack Compose y componentes relacionados
     implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+    implementation ("androidx.compose.runtime:runtime:1.6.0")
     implementation("androidx.compose.runtime:runtime-livedata:1.6.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.navigation:navigation-compose:2.5.3")
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
     implementation("androidx.activity:activity-compose:1.6.0")
     implementation("androidx.compose.ui:ui:1.6.0")
     implementation("androidx.compose.material:material:1.6.0")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
 
