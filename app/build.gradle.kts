@@ -54,6 +54,7 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
     implementation ("com.google.maps.android:android-maps-utils:3.8.0")
+    implementation ("com.google.android.gms:play-services-auth:19.0.0")
     implementation ("com.google.maps.android:maps-compose:4.4.1")
 
     // Firebase BoM: Administra las versiones de las bibliotecas de Firebase

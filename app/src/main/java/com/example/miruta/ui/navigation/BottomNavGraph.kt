@@ -31,13 +31,13 @@ fun BottomNavGraph(
         composable(BottomNavScreen.MyRoute.route) { MyRouteScreen() }
         composable("RegisterScreen") { RegisterScreen(navController) }
         composable("LoginScreen") { LoginScreen(navController) }
+        composable("ProfileScreen") { ProfileScreen(navController) }
         composable("RegisterDriverScreen") { RegisterDriverScreen(navController) }
         composable(BottomNavScreen.Auth(isUserLoggedIn).route) {
             if (isUserLoggedIn) {
                 ProfileScreen(navController)
             } else {
                 LoginScreen(navController)
-
             }
         }
     }

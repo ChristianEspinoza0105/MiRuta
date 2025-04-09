@@ -1,5 +1,6 @@
 package com.example.miruta.ui.screens
 
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -27,6 +28,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -40,10 +42,10 @@ authViewModel: AuthViewModel = hiltViewModel()
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val registerState by authViewModel.registerState.collectAsState()
 
     ConstraintLayout(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
         val (header, form, image) = createRefs()
@@ -227,8 +229,6 @@ authViewModel: AuthViewModel = hiltViewModel()
                     )
                 )
 
-                val registerState = remember { mutableStateOf<String?>(null) }
-
                 Button(
                     onClick = {
                         val trimmedEmail = email.trim()
@@ -237,11 +237,21 @@ authViewModel: AuthViewModel = hiltViewModel()
                         val trimmedPhone = phone.trim()
 
                         when {
-                            trimmedName.isEmpty() -> Toast.makeText(context, "Nombre requerido", Toast.LENGTH_SHORT).show()
-                            trimmedPhone.isEmpty() -> Toast.makeText(context, "Teléfono requerido", Toast.LENGTH_SHORT).show()
-                            !isValidEmail(trimmedEmail) -> Toast.makeText(context, "Email inválido", Toast.LENGTH_SHORT).show()
-                            trimmedPassword.length < 6 -> Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
-                            else -> authViewModel.register(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone)
+                            trimmedName.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Nombre requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPhone.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            !isValidEmail(trimmedEmail) -> context?.let {
+                                Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPassword.length < 6 -> context?.let {
+                                Toast.makeText(it, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                            }
+                            else -> {
+                                authViewModel.register(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone)
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
@@ -258,17 +268,20 @@ authViewModel: AuthViewModel = hiltViewModel()
                             fontSize = 24.sp
                         )
                     )
-                    registerState.value?.let { state ->
-                        LaunchedEffect(state) {
-                            if (state == "Registro exitoso") {
-                                navController.navigate("ProfileScreen") {
-                                    popUpTo("RegisterScreen") { inclusive = true }
-                                }
-                            } else {
-                                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
-                                registerState.value = null
-                            }
+                }
+
+                val registerState by authViewModel.registerState.collectAsState()
+
+                LaunchedEffect(registerState) {
+                    Log.d("RegisterState", "Register state: $registerState")
+                    if (registerState == "Registro exitoso") {
+                        authViewModel.setUserLoggedIn(true)
+                        navController.navigate(BottomNavScreen.Explore.route) {
+                            popUpTo("RegisterScreen") { inclusive = true }
+                            launchSingleTop = true
                         }
+                    } else if (!registerState.isNullOrBlank()) {
+                        Toast.makeText(context, registerState, Toast.LENGTH_LONG).show()
                     }
                 }
 

@@ -37,9 +37,9 @@ class AuthViewModel @Inject constructor(
         _isUserLoggedIn.value = user != null
         Log.d("AuthViewModel", "Estado de usuario: ${if (_isUserLoggedIn.value) "Conectado" else "Desconectado"}")
 
-        if (user != null) {
+        if (user != null && _userData.value == null) {
             fetchUserData(user.uid)
-        } else {
+        } else if (user == null) {
             _userData.value = null
         }
     }
@@ -80,6 +80,7 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun fetchUserData(userId: String) {
+        if (_userData.value != null) return
         viewModelScope.launch {
             firestore.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
@@ -95,6 +96,10 @@ class AuthViewModel @Inject constructor(
                     Log.e("AuthViewModel", "Error obteniendo datos del usuario", exception)
                 }
         }
+    }
+
+    fun setUserLoggedIn(isLoggedIn: Boolean) {
+        _isUserLoggedIn.value = isLoggedIn
     }
 
     override fun onCleared() {
