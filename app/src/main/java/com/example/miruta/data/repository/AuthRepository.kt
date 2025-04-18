@@ -3,6 +3,7 @@ package com.example.miruta.data.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import javax.inject.Inject
 
@@ -60,7 +61,14 @@ class AuthRepository @Inject constructor(
                         "name" to name,
                         "phone" to phone,
                         "email" to email,
-                        "role" to "user"
+                        "role" to "user",
+                        "createdAt" to FieldValue.serverTimestamp(),
+                        "profilePictureUrl" to "",
+                        "location" to hashMapOf(
+                            "latitude" to 0.0,
+                            "longitude" to 0.0
+                        ),
+                        "favorites" to emptyList<String>()
                     )
 
                     firestore.collection("users").document(uid)

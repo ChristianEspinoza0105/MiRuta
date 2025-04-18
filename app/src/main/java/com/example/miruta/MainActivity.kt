@@ -15,11 +15,15 @@ import com.example.miruta.ui.theme.MiRutaTheme
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miruta.ui.viewmodel.AuthViewModel
+import com.google.android.libraries.places.api.Places
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!Places.isInitialized()) {
+            Places.initialize(applicationContext, "AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY")
+        }
         setContent {
             MiRutaTheme {
                 val navController = rememberNavController()
