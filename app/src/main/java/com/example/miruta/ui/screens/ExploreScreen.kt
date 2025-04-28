@@ -55,6 +55,8 @@ import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.libraries.places.api.model.LocationBias
+import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.PlacesClient
 import kotlinx.coroutines.launch
 
@@ -175,9 +177,17 @@ fun ExploreScreen() {
                         updateCameraPosition(origenLatLng, destinoLatLng)
                     }
                     if (query.isNotBlank()) {
+                        val locationBias = RectangularBounds.newInstance(
+                            LatLngBounds.builder()
+                                .include(defaultLocation)
+                                .build()
+                        )
+
                         val request = FindAutocompletePredictionsRequest.builder()
                             .setQuery(query)
+                            .setLocationBias(locationBias)
                             .build()
+
                         placesClient.findAutocompletePredictions(request)
                             .addOnSuccessListener { response ->
                                 suggestions = response.autocompletePredictions
@@ -245,9 +255,17 @@ fun ExploreScreen() {
                             updateCameraPosition(origenLatLng, destinoLatLng)
                         }
                         if (query.isNotBlank()) {
+                            val locationBias = RectangularBounds.newInstance(
+                                LatLngBounds.builder()
+                                    .include(defaultLocation)
+                                    .build()
+                            )
+
                             val request = FindAutocompletePredictionsRequest.builder()
                                 .setQuery(query)
+                                .setLocationBias(locationBias)
                                 .build()
+
                             placesClient.findAutocompletePredictions(request)
                                 .addOnSuccessListener { response ->
                                     destinoSuggestions = response.autocompletePredictions
@@ -288,7 +306,7 @@ fun ExploreScreen() {
                                         updateCameraPosition(origenLatLng, destinoLatLng)
                                     }
                                 },
-                                tint = Color(0xFF00933B)
+                            tint = Color(0xFF00933B)
                         )
                     },
                     trailingIcon = {
