@@ -3,14 +3,11 @@ package com.example.miruta.ui.screens
 
 import android.Manifest
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,7 +28,6 @@ import androidx.compose.ui.Modifier
 import com.google.maps.android.compose.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.*
@@ -42,15 +38,10 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -59,12 +50,11 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import androidx.compose.ui.text.input.ImeAction
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.libraries.places.api.net.PlacesClient
 import kotlinx.coroutines.launch
 
@@ -75,32 +65,22 @@ fun ExploreScreen() {
     val defaultLocation = LatLng(20.659699, -103.349609)
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+
     var origen by remember { mutableStateOf("") }
-    val placesClient = remember { PlacesClientProvider.getClient(context) }
+    var destino by remember { mutableStateOf("") }
+
     var suggestions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
+    var destinoSuggestions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
+
+    val placesClient = remember { PlacesClientProvider.getClient(context) }
+    val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
-    val coroutineScope = rememberCoroutineScope()
 
-    val mapProperties = remember {
-        MapProperties(
-            mapType = MapType.NORMAL,
-            isIndoorEnabled = true,
-            isTrafficEnabled = false,
-            isMyLocationEnabled = true
-        )
-    }
+    var isOrigenFocused by remember { mutableStateOf(false) }
+    var isDestinoFocused by remember { mutableStateOf(false) }
 
-    val mapUiSettings = remember {
-        MapUiSettings(
-            zoomControlsEnabled = false,
-            myLocationButtonEnabled = false,
-            mapToolbarEnabled = false,
-            compassEnabled = false,
-            tiltGesturesEnabled = true,
-            rotationGesturesEnabled = true
-        )
-    }
+    var origenLatLng by remember { mutableStateOf<LatLng?>(null) }
+    var destinoLatLng by remember { mutableStateOf<LatLng?>(null) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 10f)
@@ -113,53 +93,42 @@ fun ExploreScreen() {
         )
     )
 
-    val focusManager = LocalFocusManager.current
-    var isFieldFocused by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    fun updateCameraPosition(origen: LatLng?, destino: LatLng?) {
+        val positions = listOfNotNull(origen, destino)
+        when (positions.size) {
+            0 -> return
+            1 -> cameraPositionState.move(
+                CameraUpdateFactory.newLatLngZoom(positions[0], 12f)
+            )
+            else -> {
+                val bounds = LatLngBounds.builder()
+                positions.forEach { bounds.include(it) }
+                try {
+                    cameraPositionState.move(
+                        CameraUpdateFactory.newLatLngBounds(bounds.build(), 100)
+                    )
+                } catch (e: Exception) {
+                    cameraPositionState.move(
+                        CameraUpdateFactory.newLatLngZoom(positions.first(), 12f)
+                    )
+                }
+            }
+        }
+    }
 
     LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
         if (locationPermissionsState.allPermissionsGranted) {
             try {
                 val location = getDeviceLocation(context).await()
                 val target = LatLng(location.latitude, location.longitude)
-
-                cameraPositionState.move(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition.Builder()
-                            .target(target)
-                            .zoom(10f)
-                            .tilt(0f)
-                            .build()
-                    )
-                )
-
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition.Builder()
-                            .target(target)
-                            .zoom(17f)
-                            .tilt(45f)
-                            .build()
-                    ),
-                    durationMs = 1500
-                )
-
                 userLocation = target
+                updateCameraPosition(target, null)
                 isLoading = false
             } catch (e: Exception) {
-                cameraPositionState.move(
-                    CameraUpdateFactory.newLatLngZoom(defaultLocation, 10f)
-                )
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition.Builder()
-                            .target(defaultLocation)
-                            .zoom(12f)
-                            .tilt(0f)
-                            .build()
-                    ),
-                    durationMs = 1500
-                )
                 userLocation = defaultLocation
+                updateCameraPosition(defaultLocation, null)
                 isLoading = false
             }
         } else {
@@ -171,17 +140,21 @@ fun ExploreScreen() {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = mapUiSettings
+            properties = MapProperties(isMyLocationEnabled = true),
+            uiSettings = MapUiSettings(myLocationButtonEnabled = false)
         ) {
-            selectedLocation?.let { location ->
+            origenLatLng?.let { latLng ->
                 Marker(
-                    state = MarkerState(position = location),
-                    icon = BitmapDescriptorFactory.fromBitmap(
-                        BitmapFactory.decodeResource(context.resources, R.drawable.ic_marker)
-                    ),
-                    title = "Ubicación Seleccionada",
-                    snippet = "Marcador desde autocompletado"
+                    state = MarkerState(position = latLng),
+                    title = "Origen",
+                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                )
+            }
+            destinoLatLng?.let { latLng ->
+                Marker(
+                    state = MarkerState(position = latLng),
+                    title = "Destino",
+                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
                 )
             }
         }
@@ -197,6 +170,10 @@ fun ExploreScreen() {
                 value = origen,
                 onValueChange = { query ->
                     origen = query
+                    if (query.isBlank()) {
+                        origenLatLng = null
+                        updateCameraPosition(origenLatLng, destinoLatLng)
+                    }
                     if (query.isNotBlank()) {
                         val request = FindAutocompletePredictionsRequest.builder()
                             .setQuery(query)
@@ -206,23 +183,17 @@ fun ExploreScreen() {
                                 suggestions = response.autocompletePredictions
                             }
                             .addOnFailureListener {
-                                Log.e("PLACES_API", "Error al obtener sugerencias")
                                 suggestions = emptyList()
                             }
                     } else {
                         suggestions = emptyList()
                     }
                 },
-                placeholder = {
-                    Text(
-                        text = "Search here",
-                        style = TextStyle(color = Color.Gray, fontSize = 16.sp)
-                    )
-                },
+                placeholder = { Text("Buscar origen", color = Color.Gray, fontSize = 16.sp) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .onFocusChanged { isFieldFocused = it.isFocused },
+                    .onFocusChanged { isOrigenFocused = it.isFocused },
                 shape = RoundedCornerShape(35.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     backgroundColor = Color.White,
@@ -232,60 +203,115 @@ fun ExploreScreen() {
                 leadingIcon = {
                     Icon(
                         painter = painterResource(
-                            id = if (isFieldFocused) R.drawable.ic_back else R.drawable.ic_app
+                            id = if (isOrigenFocused) R.drawable.ic_back else R.drawable.ic_app
                         ),
-                        contentDescription = if (isFieldFocused) "Back" else "Location",
-                        tint = Color.Unspecified,
+                        contentDescription = "Icono origen",
                         modifier = Modifier
-                            .size(if (isFieldFocused) 24.dp else 32.dp)
+                            .padding(8.dp)
+                            .size(24.dp)
                             .clickable {
-                                if (isFieldFocused) {
+                                if (isOrigenFocused) {
                                     origen = ""
+                                    origenLatLng = null
                                     suggestions = emptyList()
                                     focusManager.clearFocus()
+                                    updateCameraPosition(origenLatLng, destinoLatLng)
                                 }
-                            }
+                            },
+                        tint = Color(0xFF00933B)
                     )
                 },
                 trailingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.search),
-                        contentDescription = "Search",
-                        tint = Color.Unspecified,
+                        contentDescription = "Buscar",
                         modifier = Modifier
-                            .size(32.dp)
-                            .clickable {
-                                if (suggestions.isNotEmpty()) {
-                                    origen = suggestions[0].getFullText(null).toString()
-                                    suggestions = emptyList()
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                }
-                            }
+                            .padding(8.dp)
+                            .size(24.dp)
                     )
                 },
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Search,
-                    keyboardType = KeyboardType.Text
-                ),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        if (suggestions.isNotEmpty()) {
-                            origen = suggestions[0].getFullText(null).toString()
-                            suggestions = emptyList()
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        }
-                    }
-                )
+                singleLine = true
             )
 
-            if (suggestions.isNotEmpty()) {
+            if (origen.isNotBlank() || isOrigenFocused) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = destino,
+                    onValueChange = { query ->
+                        destino = query
+                        if (query.isBlank()) {
+                            destinoLatLng = null
+                            updateCameraPosition(origenLatLng, destinoLatLng)
+                        }
+                        if (query.isNotBlank()) {
+                            val request = FindAutocompletePredictionsRequest.builder()
+                                .setQuery(query)
+                                .build()
+                            placesClient.findAutocompletePredictions(request)
+                                .addOnSuccessListener { response ->
+                                    destinoSuggestions = response.autocompletePredictions
+                                }
+                                .addOnFailureListener {
+                                    destinoSuggestions = emptyList()
+                                }
+                        } else {
+                            destinoSuggestions = emptyList()
+                        }
+                    },
+                    placeholder = { Text("Buscar destino", color = Color.Gray, fontSize = 16.sp) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .onFocusChanged { isDestinoFocused = it.isFocused },
+                    shape = RoundedCornerShape(35.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        backgroundColor = Color.White,
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7)
+                    ),
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(
+                                id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_app
+                            ),
+                            contentDescription = "Icono destino",
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .clickable {
+                                    if (isDestinoFocused) {
+                                        destino = ""
+                                        destinoLatLng = null
+                                        destinoSuggestions = emptyList()
+                                        focusManager.clearFocus()
+                                        updateCameraPosition(origenLatLng, destinoLatLng)
+                                    }
+                                },
+                                tint = Color(0xFF00933B)
+                        )
+                    },
+                    trailingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.search),
+                            contentDescription = "Buscar",
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(24.dp)
+                        )
+                    },
+                    singleLine = true
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (suggestions.isNotEmpty() || destinoSuggestions.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
-                        .padding(top = 4.dp)
+                        .padding(8.dp)
                 ) {
                     suggestions.forEach { prediction ->
                         Text(
@@ -298,26 +324,39 @@ fun ExploreScreen() {
                                     focusManager.clearFocus()
                                     keyboardController?.hide()
 
+                                    val placeId = prediction.placeId
                                     coroutineScope.launch {
-                                        val location = fetchPlaceLatLng(context, prediction.placeId)
-                                        location?.let {
-                                            selectedLocation = it
-                                            cameraPositionState.animate(
-                                                CameraUpdateFactory.newCameraPosition(
-                                                    CameraPosition.Builder()
-                                                        .target(it)
-                                                        .zoom(18f)
-                                                        .tilt(45f)
-                                                        .build()
-                                                ),
-                                                durationMs = 1000
-                                            )
-                                        } ?: run {
-                                            Log.e("MAP", "Error obteniendo coordenadas")
+                                        val latLng = fetchPlaceLatLng(context, placeId)
+                                        if (latLng != null) {
+                                            origenLatLng = latLng
+                                            updateCameraPosition(origenLatLng, destinoLatLng)
                                         }
                                     }
                                 }
-                                .padding(16.dp)
+                                .padding(8.dp)
+                        )
+                    }
+                    destinoSuggestions.forEach { prediction ->
+                        Text(
+                            text = prediction.getFullText(null).toString(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    destino = prediction.getFullText(null).toString()
+                                    destinoSuggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+
+                                    val placeId = prediction.placeId
+                                    coroutineScope.launch {
+                                        val latLng = fetchPlaceLatLng(context, placeId)
+                                        if (latLng != null) {
+                                            destinoLatLng = latLng
+                                            updateCameraPosition(origenLatLng, destinoLatLng)
+                                        }
+                                    }
+                                }
+                                .padding(8.dp)
                         )
                     }
                 }
@@ -331,7 +370,7 @@ object PlacesClientProvider {
 
     fun getClient(context: Context): PlacesClient {
         if (placesClient == null) {
-            placesClient = Places.createClient(context.applicationContext)
+            placesClient = Places.createClient(context)
         }
         return placesClient!!
     }
@@ -340,13 +379,12 @@ object PlacesClientProvider {
 suspend fun fetchPlaceLatLng(context: Context, placeId: String): LatLng? {
     return try {
         val placesClient = PlacesClientProvider.getClient(context)
-        val request = FetchPlaceRequest.builder(placeId, listOf(Place.Field.LAT_LNG)).build()
+        val placeFields = listOf(Place.Field.LAT_LNG)
+        val request = FetchPlaceRequest.builder(placeId, placeFields).build()
         val response = placesClient.fetchPlace(request).await()
-        response.place.latLng?.also {
-            Log.d("MAP", "Coordenadas obtenidas: $it")
-        }
+        response.place.latLng
     } catch (e: Exception) {
-        Log.e("MAP", "Error fetchPlace: ${e.message}")
+        Log.e("FetchPlaceLatLng", "Error fetching place LatLng", e)
         null
     }
 }
