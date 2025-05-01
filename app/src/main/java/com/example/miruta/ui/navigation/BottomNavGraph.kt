@@ -46,7 +46,7 @@ fun BottomNavGraph(
             route = "routeMap/{routeId}/{color}",
             arguments = listOf(
                 navArgument("routeId") { type = NavType.StringType },
-                navArgument("color")   { type = NavType.StringType }
+                navArgument("color")   { type = NavType.StringType },
             )
         ) { back ->
             val id    = back.arguments!!.getString("routeId")!!
