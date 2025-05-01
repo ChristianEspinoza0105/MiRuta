@@ -1,6 +1,10 @@
 package com.example.miruta.ui.screens
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,8 +34,6 @@ import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.util.parseRouteColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.alpha
 
 @Composable
 fun LinesScreen(navController: NavController) {
@@ -61,7 +63,6 @@ fun LinesScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { query -> searchQuery = query },
@@ -82,8 +83,7 @@ fun LinesScreen(navController: NavController) {
                         modifier = Modifier
                             .padding(8.dp)
                             .size(24.dp),
-                        tint = Color(0xFF00933B)
-                    )
+                        tint = Color(0xFF00933B))
                 },
                 trailingIcon = {
                     Icon(
@@ -100,41 +100,39 @@ fun LinesScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val rowAlpha by animateFloatAsState(targetValue = if (searchQuery.isEmpty()) 1f else 0f)
-
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .alpha(rowAlpha), // <-- Aquí aplicamos la animación
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(0.dp)
+        AnimatedVisibility(
+            visible = searchQuery.isEmpty(),
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            items(listOf(R.drawable.mi_transporte, R.drawable.mi_tren, R.drawable.mi_macro)) { imageRes ->
-                Box(
+            Column {
+                LazyRow(
                     modifier = Modifier
-                        .width(200.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            // Acción al hacer clic
-                        }
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = imageRes),
-                        contentDescription = "Option image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    items(listOf(R.drawable.mi_transporte, R.drawable.mi_tren, R.drawable.mi_macro)) { imageRes ->
+                        Box(
+                            modifier = Modifier
+                                .width(200.dp)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { /* Acción al hacer clic */ }
+                        ) {
+                            Image(
+                                painter = painterResource(id = imageRes),
+                                contentDescription = "Option image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
-
-        val animatedSpacerHeight by animateDpAsState(
-            targetValue = if (searchQuery.isEmpty()) 16.dp else (-100).dp // Sube cuando escribes
-        )
-
-        Spacer(modifier = Modifier.height(animatedSpacerHeight))
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
