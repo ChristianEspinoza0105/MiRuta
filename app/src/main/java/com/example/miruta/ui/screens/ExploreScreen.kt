@@ -166,8 +166,6 @@ fun ExploreScreen() {
                 .align(Alignment.TopCenter)
                 .padding(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
             OutlinedTextField(
                 value = origen,
                 onValueChange = { query ->
@@ -199,7 +197,7 @@ fun ExploreScreen() {
                         suggestions = emptyList()
                     }
                 },
-                placeholder = { Text("Buscar origen", color = Color.Gray, fontSize = 16.sp) },
+                placeholder = { Text("Search origin", color = Color.Gray, fontSize = 16.sp) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -277,7 +275,7 @@ fun ExploreScreen() {
                             destinoSuggestions = emptyList()
                         }
                     },
-                    placeholder = { Text("Buscar destino", color = Color.Gray, fontSize = 16.sp) },
+                    placeholder = { Text("Search destination", color = Color.Gray, fontSize = 16.sp) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
