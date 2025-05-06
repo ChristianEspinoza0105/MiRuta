@@ -1,5 +1,6 @@
 package com.example.miruta.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -40,6 +41,7 @@ fun LinesScreen(navController: NavController) {
     val context = LocalContext.current
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTransport by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val list = withContext(Dispatchers.IO) {
@@ -48,11 +50,27 @@ fun LinesScreen(navController: NavController) {
         routes = list
     }
 
-    val filtered = remember(routes, searchQuery) {
-        routes.filter { r ->
-            r.routeShortName.contains(searchQuery, ignoreCase = true) ||
-                    r.routeLongName.contains(searchQuery, ignoreCase = true)
+    val filtered = remember(routes, searchQuery, selectedTransport) {
+        routes.filter { route ->
+            val matchesSearch = route.routeShortName.contains(searchQuery, ignoreCase = true) ||
+                    route.routeLongName.contains(searchQuery, ignoreCase = true)
+
+            val matchesFilter = when (selectedTransport) {
+                "mi_transporte" -> route.routeShortName.startsWith("C", ignoreCase = true) ||
+                        route.routeShortName.startsWith("T", ignoreCase = true)
+                "mi_tren" -> route.routeLongName.equals("Linea 1 Periferico Sur-Auditorio", ignoreCase = true) ||
+                        route.routeLongName.equals("Linea 2 Juarez-Tetlan", ignoreCase = true) ||
+                        route.routeLongName.equals("Linea 3 Arcos Zapopan - Central Camionera", ignoreCase = true)
+                "mi_macro" -> route.routeShortName.startsWith("M", ignoreCase = true)
+                else -> true
+            }
+
+            matchesSearch && matchesFilter
         }
+    }
+
+    BackHandler {
+        selectedTransport = null
     }
 
     Column(
@@ -101,11 +119,17 @@ fun LinesScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         AnimatedVisibility(
-            visible = searchQuery.isEmpty(),
+            visible = searchQuery.isEmpty() && selectedTransport == null,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             Column {
+                val imageFilters = listOf(
+                    R.drawable.mi_transporte to "mi_transporte",
+                    R.drawable.mi_tren to "mi_tren",
+                    R.drawable.mi_macro to "mi_macro"
+                )
+
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -113,13 +137,15 @@ fun LinesScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    items(listOf(R.drawable.mi_transporte, R.drawable.mi_tren, R.drawable.mi_macro)) { imageRes ->
+                    items(imageFilters) { (imageRes, filterType) ->
                         Box(
                             modifier = Modifier
                                 .width(200.dp)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { /* Acción al hacer clic */ }
+                                .clickable {
+                                    selectedTransport = if (selectedTransport == filterType) null else filterType
+                                }
                         ) {
                             Image(
                                 painter = painterResource(id = imageRes),
