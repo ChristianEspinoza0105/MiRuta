@@ -53,6 +53,7 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.example.miruta.utils.getRoutePoints
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.libraries.places.api.model.LocationBias
@@ -83,6 +84,8 @@ fun ExploreScreen() {
 
     var origenLatLng by remember { mutableStateOf<LatLng?>(null) }
     var destinoLatLng by remember { mutableStateOf<LatLng?>(null) }
+
+    var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 10f)
@@ -138,6 +141,17 @@ fun ExploreScreen() {
         }
     }
 
+    LaunchedEffect(origenLatLng, destinoLatLng) {
+        if (origenLatLng != null && destinoLatLng != null) {
+            val points = getRoutePoints(origenLatLng!!, destinoLatLng!!, "AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY")
+
+            Log.d("RoutePoints", "Ruta generada: ${points.joinToString(", ") { "(${it.latitude}, ${it.longitude})" }}")
+
+            routePoints = points
+        }
+    }
+
+
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -157,6 +171,13 @@ fun ExploreScreen() {
                     state = MarkerState(position = latLng),
                     title = "Destino",
                     icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                )
+            }
+            if (routePoints.isNotEmpty()) {
+                Polyline(
+                    points = routePoints,
+                    color = Color.Blue,
+                    width = 5f
                 )
             }
         }
