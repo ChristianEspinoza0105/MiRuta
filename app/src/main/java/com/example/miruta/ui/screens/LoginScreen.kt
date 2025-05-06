@@ -188,31 +188,21 @@ fun LoginScreen(
                         .padding(top = 20.dp)
                 )
 
+                val loginState = remember { mutableStateOf<String?>(null) }
+
                 Button(
                     onClick = {
                         val trimmedEmail = email.trim()
                         val trimmedPassword = password.trim()
 
                         if (trimmedEmail.isEmpty()) {
-                            Toast.makeText(
-                                context,
-                                "El correo electrónico no puede estar vacío.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "El correo electrónico no puede estar vacío.", Toast.LENGTH_SHORT).show()
                         } else if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
-                            Toast.makeText(
-                                context,
-                                "Correo electrónico no válido.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "Correo electrónico no válido.", Toast.LENGTH_SHORT).show()
                         }
 
                         if (trimmedPassword.isEmpty()) {
-                            Toast.makeText(
-                                context,
-                                "La contraseña no puede estar vacía.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "La contraseña no puede estar vacía.", Toast.LENGTH_SHORT).show()
                         }
 
                         if (trimmedEmail.isNotEmpty() && trimmedPassword.isNotEmpty() &&
@@ -235,6 +225,27 @@ fun LoginScreen(
                             fontSize = 24.sp
                         )
                     )
+                    loginState.value?.let { state ->
+                        Text(
+                            text = state,
+                            color = if (state == "Login exitoso") Color.Green else Color.Red,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+
+                        if (state == "Login exitoso") {
+                            LaunchedEffect(state) {
+                                navController.navigate("ProfileScreen") {
+                                    popUpTo("LoginScreen") { inclusive = true }
+                                }
+                                loginState.value = null
+                            }
+                        } else if (state != null) {
+                            LaunchedEffect(state) {
+                                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
+                                loginState.value = null
+                            }
+                        }
+                    }
                 }
 
                 Text(
@@ -252,23 +263,6 @@ fun LoginScreen(
                             navController.navigate("RegisterScreen")
                         }
                 )
-
-                loginState?.let {
-                    Text(
-                        text = it,
-                        color = if (it == "Login exitoso") Color.Green else Color.Red,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-
-                    if (it == "Login exitoso") {
-                        LaunchedEffect(it) {
-                            Log.d("LoginScreen", "Navegando a ProfileScreen después del login exitoso")
-                            navController.navigate("ProfileScreen") {
-                                popUpTo("LoginScreen") { inclusive = true }
-                            }
-                        }
-                    }
-                }
             }
         }
         val configuration = LocalConfiguration.current
