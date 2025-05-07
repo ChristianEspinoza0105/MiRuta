@@ -47,9 +47,6 @@ android {
 
 dependencies {
 
-    //Solicitudes HTTP
-    implementation ("com.squareup.okhttp3:okhttp:4.9.3")
-
     //OpenCSV
     implementation ("com.opencsv:opencsv:5.5.2")
 
