@@ -1,5 +1,8 @@
 package com.example.miruta.ui.screens
 
+import android.util.Log
+import android.util.Patterns
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +28,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -36,9 +41,11 @@ authViewModel: AuthViewModel = hiltViewModel()
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     ConstraintLayout(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
         val (header, form, image) = createRefs()
@@ -224,7 +231,28 @@ authViewModel: AuthViewModel = hiltViewModel()
 
                 Button(
                     onClick = {
+                        val trimmedEmail = email.trim()
+                        val trimmedPassword = password.trim()
+                        val trimmedName = name.trim()
+                        val trimmedPhone = phone.trim()
 
+                        when {
+                            trimmedName.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Nombre requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPhone.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            !isValidEmail(trimmedEmail) -> context?.let {
+                                Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPassword.length < 6 -> context?.let {
+                                Toast.makeText(it, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                            }
+                            else -> {
+                                authViewModel.register(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone)
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                     modifier = Modifier
@@ -232,7 +260,7 @@ authViewModel: AuthViewModel = hiltViewModel()
                         .padding(top = 20.dp, start = 45.dp, end = 45.dp)
                 ) {
                     Text(
-                        text = "Sign in",
+                        text = "Sign up",
                         color = Color.White,
                         style = TextStyle(
                             fontFamily = AppTypography.button.fontFamily,
@@ -240,6 +268,21 @@ authViewModel: AuthViewModel = hiltViewModel()
                             fontSize = 24.sp
                         )
                     )
+                }
+
+                val registerState by authViewModel.registerState.collectAsState()
+
+                LaunchedEffect(registerState) {
+                    Log.d("RegisterState", "Register state: $registerState")
+                    if (registerState == "Registro exitoso") {
+                        authViewModel.setUserLoggedIn(true)
+                        navController.navigate(BottomNavScreen.Explore.route) {
+                            popUpTo("RegisterScreen") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    } else if (!registerState.isNullOrBlank()) {
+                        Toast.makeText(context, registerState, Toast.LENGTH_LONG).show()
+                    }
                 }
 
                 val configuration = LocalConfiguration.current
@@ -285,4 +328,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                 .zIndex(1f)
         )
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

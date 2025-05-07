@@ -18,4 +18,5 @@ sealed class BottomNavScreen(
         title = if (isUserLoggedIn) "Profile" else "Login",
         icon = R.drawable.ic_perfil,
         selectedIcon = R.drawable.ic_perfil_selected
-    )}
+    )
+}
