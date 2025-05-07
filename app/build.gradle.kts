@@ -46,48 +46,55 @@ android {
 }
 
 dependencies {
+
+    //OpenCSV
+    implementation ("com.opencsv:opencsv:5.5.2")
+
     //Maps
-    implementation ("com.google.android.gms:play-services-maps:19.2.0")
-    implementation ("com.google.accompanist:accompanist-permissions:0.37.2")
-    implementation ("com.google.android.gms:play-services-location:21.3.0")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
-    implementation ("com.google.android.gms:play-services-maps:19.2.0")
-    implementation ("com.google.maps.android:android-maps-utils:3.11.2")
-    implementation ("com.google.maps.android:maps-compose:6.5.2")
+    implementation ("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation ("com.google.android.gms:play-services-base:18.2.0")
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
+    implementation ("com.google.android.libraries.places:places:3.3.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation ("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ("com.google.maps.android:android-maps-utils:3.8.0")
+    implementation ("com.google.android.gms:play-services-auth:19.0.0")
+    implementation ("com.google.maps.android:maps-compose:4.4.1")
 
     // Firebase BoM: Administra las versiones de las bibliotecas de Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
 
     // Bibliotecas de Firebase
     implementation("com.google.firebase:firebase-auth-ktx") // Autenticación de Firebase
     implementation("com.google.firebase:firebase-firestore-ktx") // Firestore de Firebase
 
     // Dagger Hilt para inyección de dependencias
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    kapt("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     // Kotlin estándar
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
 
     // Jetpack Compose y componentes relacionados
-    implementation ("androidx.constraintlayout:constraintlayout-compose:1.1.1")
-    implementation("androidx.compose.runtime:runtime-livedata:1.7.8")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.navigation:navigation-compose:2.8.9")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.compose.material:material:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
+    implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+    implementation ("androidx.compose.runtime:runtime:1.6.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.navigation:navigation-compose:2.5.3")
+    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+    implementation("androidx.activity:activity-compose:1.6.0")
+    implementation("androidx.compose.ui:ui:1.6.0")
+    implementation("androidx.compose.material:material:1.6.0")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.0")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
 
     // Otras bibliotecas de Jetpack
-    implementation("androidx.core:core-ktx:1.16.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation(platform("androidx.compose:compose-bom:2025.04.00"))
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    implementation("androidx.activity:activity-compose:1.6.0")
+    implementation(platform("androidx.compose:compose-bom:2023.01.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -95,9 +102,9 @@ dependencies {
 
     // Dependencias para pruebas
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.00"))
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2023.01.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

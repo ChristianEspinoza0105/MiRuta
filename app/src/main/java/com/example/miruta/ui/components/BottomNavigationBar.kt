@@ -28,7 +28,7 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
         BottomNavScreen.Community,
         BottomNavScreen.Explore,
         BottomNavScreen.MyRoute,
-        BottomNavScreen.Auth(isUserLoggedIn)
+        BottomNavScreen.Auth(isUserLoggedIn),
     )
 
     BottomNavigation(
