@@ -1,6 +1,5 @@
 package com.example.miruta.ui.screens
 
-import android.R.attr.onClick
 import com.example.miruta.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,7 +34,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.shadow
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -249,7 +247,7 @@ fun CurrentLocationBottomSheetContent(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.white_location),
+                    painter = painterResource(id = R.drawable.ic_location_myroute),
                     contentDescription = null,
                     modifier = Modifier.size(36.dp)
                 )
@@ -263,7 +261,7 @@ fun CurrentLocationBottomSheetContent(
             ) {
                 Box() {
                     Image(
-                        painter = painterResource(id = R.drawable.equis),
+                        painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -376,7 +374,7 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.clock),
+                    painter = painterResource(id = R.drawable.ic_white_clock),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
@@ -393,7 +391,7 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
             ) {
                 Box() {
                     Image(
-                        painter = painterResource(id = R.drawable.equis),
+                        painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -495,7 +493,7 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.clock),
+                            painter = painterResource(id = R.drawable.ic_clock_route),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -531,7 +529,7 @@ fun FavoriteBottomSheetContent(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.white_star),
+                    painter = painterResource(id = R.drawable.ic_white_star),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
@@ -548,7 +546,7 @@ fun FavoriteBottomSheetContent(
             ) {
                 Box() {
                     Image(
-                        painter = painterResource(id = R.drawable.equis),
+                        painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -590,7 +588,7 @@ fun FavoriteBottomSheetContent(
 
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.bus),
+                            painter = painterResource(id = R.drawable.ic_route_favorite),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(62.dp)
@@ -630,7 +628,7 @@ fun FavoriteBottomSheetContent(
 
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.white_location),
+                            painter = painterResource(id = R.drawable.ic_location_myroute),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(62.dp)
@@ -658,7 +656,7 @@ fun RouteSearchBottomSheetContent(onDismiss: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.bus),
+                    painter = painterResource(id = R.drawable.ic_route_favorite),
                     contentDescription = null,
                     modifier = Modifier.size(36.dp)
                 )
@@ -672,7 +670,7 @@ fun RouteSearchBottomSheetContent(onDismiss: () -> Unit) {
             ) {
                 Box {
                     Image(
-                        painter = painterResource(id = R.drawable.equis),
+                        painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -722,7 +720,7 @@ fun LocationBottomSheetContent(
 
         ) {
             Image(
-                painter = painterResource(id = R.drawable.white_location),
+                painter = painterResource(id = R.drawable.ic_location_myroute),
                 contentDescription = null,
                 modifier = Modifier.size(36.dp)
             )
@@ -736,7 +734,7 @@ fun LocationBottomSheetContent(
         ) {
             Box() {
                 Image(
-                    painter = painterResource(id = R.drawable.equis),
+                    painter = painterResource(id = R.drawable.ic_exit),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
@@ -795,7 +793,7 @@ fun LocationBottomSheetContent(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(id = R.drawable.mapa),
+                    painter = painterResource(id = R.drawable.ic_mapa),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
@@ -891,7 +889,7 @@ fun RouteButtons(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.star),
+                        painter = painterResource(id = R.drawable.ic_star),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -932,7 +930,7 @@ fun RouteButtons(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.clock),
+                        painter = painterResource(id = R.drawable.ic_clock_route),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
