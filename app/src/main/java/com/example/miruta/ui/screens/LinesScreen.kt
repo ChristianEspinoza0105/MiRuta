@@ -105,7 +105,7 @@ fun LinesScreen(navController: NavController) {
                 },
                 trailingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = "Buscar",
                         modifier = Modifier
                             .padding(8.dp)
