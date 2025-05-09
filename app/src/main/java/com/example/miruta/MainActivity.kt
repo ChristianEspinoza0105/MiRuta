@@ -3,6 +3,7 @@ package com.example.miruta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.collectAsState
@@ -14,6 +15,7 @@ import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.theme.MiRutaTheme
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.google.android.libraries.places.api.Places
 
@@ -30,19 +32,27 @@ class MainActivity : ComponentActivity() {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 val isUserLoggedIn by authViewModel.isUserLoggedIn.collectAsState()
 
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                val showBottomBar = currentRoute?.startsWith("chat/") == false
+
                 Scaffold(
                     bottomBar = {
-                        BottomNavigationBar(
+                        if (showBottomBar) {
+                            BottomNavigationBar(
+                                navController = navController,
+                                isUserLoggedIn = isUserLoggedIn
+                            )
+                        }
+                    }
+                ) { _ ->
+                    Box(modifier = Modifier) {
+                        BottomNavGraph(
                             navController = navController,
-                            isUserLoggedIn = isUserLoggedIn
+                            authViewModel = authViewModel
                         )
                     }
-                ) { paddingValues ->
-                    BottomNavGraph(
-                        navController = navController,
-                        padding = Modifier.padding(paddingValues),
-                        authViewModel = authViewModel
-                    )
                 }
             }
         }

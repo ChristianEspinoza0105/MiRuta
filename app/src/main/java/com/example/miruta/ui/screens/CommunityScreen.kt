@@ -15,6 +15,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.miruta.R
 import com.example.miruta.data.gtfs.parseRoutesFromGTFS
 import com.example.miruta.data.models.Route
@@ -25,7 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun CommunityScreen() {
+fun CommunityScreen(navController: NavController) {
     val context = LocalContext.current
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -51,7 +52,10 @@ fun CommunityScreen() {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Box(
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+            {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { query -> searchQuery = query },
@@ -118,7 +122,7 @@ fun CommunityScreen() {
                     color = parseRouteColor(route.routeColor),
                     icon = icon,
                     onClick = {
-
+                        navController.navigate("chat/${route.routeShortName}")
                     }
                 )
             }
