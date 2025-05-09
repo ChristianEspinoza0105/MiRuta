@@ -82,7 +82,7 @@ authViewModel: AuthViewModel = hiltViewModel()
                         .padding(start = 40.dp, top = 35.dp)
                 )
                 Text(
-                    text = "Always on route. Sign in.",
+                    text = "Always on route. Sign up.",
                     color = Color.White,
                     style = TextStyle(
                         fontFamily = AppTypography.body1.fontFamily,
@@ -112,7 +112,7 @@ authViewModel: AuthViewModel = hiltViewModel()
         ) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Sign in",
+                    text = "Sign up",
                     color = Color(0xFF00933B),
                     style = TextStyle(
                         fontFamily = AppTypography.h2.fontFamily,
