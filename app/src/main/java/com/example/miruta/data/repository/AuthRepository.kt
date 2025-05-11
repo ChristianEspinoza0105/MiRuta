@@ -86,6 +86,53 @@ class AuthRepository @Inject constructor(
             }
     }
 
+    fun registerDriver(
+        email: String,
+        password: String,
+        name: String,
+        phone: String,
+        route: String,
+        plates: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val uid = auth.currentUser?.uid ?: run {
+                        onResult(false, "Error al obtener conductor registrado")
+                        return@addOnCompleteListener
+                    }
+
+                    val driverData = hashMapOf(
+                        "name" to name,
+                        "phone" to phone,
+                        "email" to email,
+                        "rute" to route,
+                        "pates" to plates,
+                        "role" to "driver",
+                        "createdAt" to FieldValue.serverTimestamp(),
+                        "profilePictureUrl" to "",
+                        "location" to hashMapOf(
+                            "latitude" to 0.0,
+                            "longitude" to 0.0
+                        )
+                    )
+
+                    firestore.collection("drivers").document(uid)
+                        .set(driverData)
+                        .addOnSuccessListener {
+                            onResult(true, null)
+                        }
+                        .addOnFailureListener { e ->
+                            auth.currentUser?.delete()
+                            onResult(false, "Error al guardar datos adicionales: ${e.message}")
+                        }
+                } else {
+                    onResult(false, task.exception?.message ?: "Error desconocido")
+                }
+            }
+    }
+
     fun logoutUser() {
         auth.signOut()
     }
