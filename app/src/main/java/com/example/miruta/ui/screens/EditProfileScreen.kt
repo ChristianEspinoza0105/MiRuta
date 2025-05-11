@@ -10,35 +10,34 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
-import com.example.miruta.ui.viewmodel.AuthViewModel
 
 @Composable
-fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
+fun EditProfileScreen(navController: NavController) {
     var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
     var showImagePopup by remember { mutableStateOf(false) }
+
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF008000)) // Green background
+                .background(Color(0xFF008000))
                 .padding(top = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -52,9 +51,19 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                         .clickable { showImagePopup = true },
                     contentScale = ContentScale.Crop
                 )
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Icon",
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(24.dp),
+                    tint = Color.White
+                )
             }
+
             Spacer(modifier = Modifier.height(8.dp))
-            Text("User", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
+            Text("Editar perfil", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
@@ -65,27 +74,53 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                 elevation = 8.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    ProfileOption(icon = Icons.Default.Edit, text = "Edit profile") {
-                        navController.navigate("editProfile")
-                    }
-                    ProfileOption(icon = Icons.Default.Notifications, text = "Notifications") {}
-                    ProfileOption(icon = Icons.Default.ExitToApp, text = "Log out", color = Color.Red) {
-                        authViewModel.logout()
-                        navController.navigate("LoginScreen") {
-                            popUpTo("explore") { inclusive = true }
-                        }
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Nombre") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Teléfono") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Correo") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            // Guardar y volver
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF008000))
+                    ) {
+                        Text("Guardar", color = Color.White)
                     }
                 }
             }
         }
 
+        // AlertDialog para seleccionar imagen
         if (showImagePopup) {
             AlertDialog(
                 onDismissRequest = { showImagePopup = false },
                 text = {
                     LazyColumn {
                         items((0 until 20 step 4).toList()) { rowIndex ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
                                 for (columnIndex in 0 until 4) {
                                     val index = rowIndex + columnIndex
                                     if (index < 20) {
@@ -107,48 +142,9 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                             }
                         }
                     }
-                }
-                ,
+                },
                 buttons = {}
             )
         }
-    }
-}
-
-@Composable
-fun ProfileOption(icon: ImageVector, text: String, color: Color = Color.Black, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = text,
-            tint = color,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = text, fontSize = 16.sp, color = color)
-    }
-}
-
-fun getAvatarResource(index: Int): Int {
-    return when (index) {
-        0 -> R.drawable.avatar_placeholder_1
-        1 -> R.drawable.avatar_placeholder_2
-        2 -> R.drawable.avatar_placeholder_3
-        3 -> R.drawable.avatar_placeholder_4
-        4 -> R.drawable.avatar_placeholder_5
-        5 -> R.drawable.avatar_placeholder_6
-        6 -> R.drawable.avatar_placeholder_7
-        7 -> R.drawable.avatar_placeholder_8
-        8 -> R.drawable.avatar_placeholder_9
-        9 -> R.drawable.avatar_placeholder_10
-
-        // ... add the rest of your 20 avatars here
-        else -> R.drawable.avatar_placeholder_1
     }
 }
