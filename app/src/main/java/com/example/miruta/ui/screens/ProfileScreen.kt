@@ -21,55 +21,183 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
+
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.constraintlayout.compose.ConstraintLayout
+
+
+private val avatarResources = listOf(
+    R.drawable.avatar_placeholder_1,
+    R.drawable.avatar_placeholder_2,
+    R.drawable.avatar_placeholder_3,
+    R.drawable.avatar_placeholder_4,
+    R.drawable.avatar_placeholder_5,
+    R.drawable.avatar_placeholder_6,
+    R.drawable.avatar_placeholder_7,
+    R.drawable.avatar_placeholder_8,
+    R.drawable.avatar_placeholder_9,
+    R.drawable.avatar_placeholder_10
+)
+
+private fun getAvatarResource(index: Int): Int {
+    return avatarResources.getOrElse(index) { R.drawable.avatar_placeholder_1 }
+}
 
 @Composable
 fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
     var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
     var showImagePopup by remember { mutableStateOf(false) }
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val titleFontSize = (screenWidth.value * 0.08).sp
+    val subtitleFontSize = (screenWidth.value * 0.04).sp
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    ConstraintLayout(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF00933B))
+    ) {
+        val (header, form, image) = createRefs()
+        val guidelineTop = createGuidelineFromTop(0.2f)
+
+        // Header Section
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF008000)) // Green background
-                .padding(top = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .constrainAs(header) {
+                    top.linkTo(parent.top)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+                .fillMaxWidth()
+                .height(175.dp)
+                .background(Color(0xFF00933B))
         ) {
-            Box(modifier = Modifier.size(120.dp)) {
-                Image(
-                    painter = painterResource(id = selectedImage),
-                    contentDescription = "Profile Image",
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Mi Perfil",
+                    color = Color.White,
+                    style = TextStyle(
+                        fontFamily = AppTypography.h1.fontFamily,
+                        fontWeight = AppTypography.h1.fontWeight,
+                        fontSize = titleFontSize
+                    ),
                     modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .clickable { showImagePopup = true },
-                    contentScale = ContentScale.Crop
+                        .align(Alignment.Start)
+                        .padding(start = 40.dp, top = 30.dp)
+                )
+                Text(
+                    text = "Administra tu información personal",
+                    color = Color.White,
+                    style = TextStyle(
+                        fontFamily = AppTypography.body1.fontFamily,
+                        fontWeight = AppTypography.body1.fontWeight,
+                        fontSize = subtitleFontSize
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(start = 45.dp, top = 10.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("User", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
-            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-            Card(
+        // Main Content
+        Box(
+            modifier = Modifier
+                .constrainAs(form) {
+                    top.linkTo(guidelineTop)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    bottom.linkTo(parent.bottom)
+                }
+                .fillMaxHeight(0.85f)
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                )
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = MaterialTheme.shapes.medium,
-                elevation = 8.dp
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    ProfileOption(icon = Icons.Default.Edit, text = "Edit profile") {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Profile Image
+                Box(
+                    modifier = Modifier
+                        .size(screenWidth * 0.3f)
+                        .clip(CircleShape)
+                        .clickable { showImagePopup = true }
+                        .background(Color.LightGray)
+                ) {
+                    Image(
+                        painter = painterResource(id = selectedImage),
+                        contentDescription = "Profile Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "User",
+                    style = TextStyle(
+                        fontFamily = AppTypography.h2.fontFamily,
+                        fontWeight = AppTypography.h2.fontWeight,
+                        fontSize = 24.sp
+                    ),
+                    color = Color(0xFF00933B)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Profile Options
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    ProfileOption(
+                        icon = Icons.Default.Edit,
+                        text = "Editar perfil",
+                        color = Color(0xFF00933B)
+                    ) {
                         navController.navigate("editProfile")
                     }
-                    ProfileOption(icon = Icons.Default.Notifications, text = "Notifications") {}
-                    ProfileOption(icon = Icons.Default.ExitToApp, text = "Log out", color = Color.Red) {
+
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color.LightGray,
+                        thickness = 1.dp
+                    )
+
+                    ProfileOption(
+                        icon = Icons.Default.Notifications,
+                        text = "Notificaciones",
+                        color = Color(0xFF00933B)
+                    ) {}
+
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = Color.LightGray,
+                        thickness = 1.dp
+                    )
+
+                    ProfileOption(
+                        icon = Icons.Default.ExitToApp,
+                        text = "Cerrar sesión",
+                        color = Color.Red
+                    ) {
                         authViewModel.logout()
                         navController.navigate("LoginScreen") {
                             popUpTo("explore") { inclusive = true }
@@ -79,13 +207,17 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
             }
         }
 
+        // Avatar Selection Dialog
         if (showImagePopup) {
             AlertDialog(
                 onDismissRequest = { showImagePopup = false },
                 text = {
                     LazyColumn {
                         items((0 until 20 step 4).toList()) { rowIndex ->
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
                                 for (columnIndex in 0 until 4) {
                                     val index = rowIndex + columnIndex
                                     if (index < 20) {
@@ -94,7 +226,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                                             painter = painterResource(id = imgId),
                                             contentDescription = "Avatar $index",
                                             modifier = Modifier
-                                                .size(60.dp)
+                                                .size(screenWidth * 0.15f)
                                                 .padding(4.dp)
                                                 .clip(CircleShape)
                                                 .clickable {
@@ -107,8 +239,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                             }
                         }
                     }
-                }
-                ,
+                },
                 buttons = {}
             )
         }
@@ -116,39 +247,29 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 }
 
 @Composable
-fun ProfileOption(icon: ImageVector, text: String, color: Color = Color.Black, onClick: () -> Unit) {
+fun ProfileOption(icon: ImageVector, text: String, color: Color = Color(0xFF00933B), onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 16.dp, horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = text,
             tint = color,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(28.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(text = text, fontSize = 16.sp, color = color)
-    }
-}
-
-fun getAvatarResource(index: Int): Int {
-    return when (index) {
-        0 -> R.drawable.avatar_placeholder_1
-        1 -> R.drawable.avatar_placeholder_2
-        2 -> R.drawable.avatar_placeholder_3
-        3 -> R.drawable.avatar_placeholder_4
-        4 -> R.drawable.avatar_placeholder_5
-        5 -> R.drawable.avatar_placeholder_6
-        6 -> R.drawable.avatar_placeholder_7
-        7 -> R.drawable.avatar_placeholder_8
-        8 -> R.drawable.avatar_placeholder_9
-        9 -> R.drawable.avatar_placeholder_10
-
-        // ... add the rest of your 20 avatars here
-        else -> R.drawable.avatar_placeholder_1
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = text,
+            style = TextStyle(
+                fontFamily = AppTypography.body1.fontFamily,
+                fontWeight = AppTypography.body1.fontWeight,
+                fontSize = 18.sp
+            ),
+            color = color
+        )
     }
 }

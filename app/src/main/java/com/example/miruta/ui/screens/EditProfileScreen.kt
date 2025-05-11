@@ -24,93 +24,253 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.miruta.R
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.constraintlayout.compose.ConstraintLayout
+import com.example.miruta.ui.theme.AppTypography
+
+
+private val avatarResources = listOf(
+    R.drawable.avatar_placeholder_1,
+    R.drawable.avatar_placeholder_2,
+    R.drawable.avatar_placeholder_3,
+    R.drawable.avatar_placeholder_4,
+    R.drawable.avatar_placeholder_5,
+    R.drawable.avatar_placeholder_6,
+    R.drawable.avatar_placeholder_7,
+    R.drawable.avatar_placeholder_8,
+    R.drawable.avatar_placeholder_9,
+    R.drawable.avatar_placeholder_10
+)
+
+private fun getAvatarResource(index: Int): Int {
+    return avatarResources.getOrElse(index) { R.drawable.avatar_placeholder_1 }
+}
+
 @Composable
 fun EditProfileScreen(navController: NavController) {
     var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
     var showImagePopup by remember { mutableStateOf(false) }
-
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val titleFontSize = (screenWidth.value * 0.08).sp
+    val subtitleFontSize = (screenWidth.value * 0.04).sp
+
+    ConstraintLayout(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF00933B))
+    ) {
+        val (header, form) = createRefs()
+        val guidelineTop = createGuidelineFromTop(0.2f)
+
+        // Header Section
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF008000))
-                .padding(top = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .constrainAs(header) {
+                    top.linkTo(parent.top)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+                .fillMaxWidth()
+                .height(175.dp)
+                .background(Color(0xFF00933B))
         ) {
-            Box(modifier = Modifier.size(120.dp)) {
-                Image(
-                    painter = painterResource(id = selectedImage),
-                    contentDescription = "Profile Image",
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Editar Perfil",
+                    color = Color.White,
+                    style = TextStyle(
+                        fontFamily = AppTypography.h1.fontFamily,
+                        fontWeight = AppTypography.h1.fontWeight,
+                        fontSize = titleFontSize
+                    ),
                     modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .clickable { showImagePopup = true },
-                    contentScale = ContentScale.Crop
+                        .align(Alignment.Start)
+                        .padding(start = 40.dp, top = 30.dp)
                 )
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Icon",
+                Text(
+                    text = "Actualiza tu información personal",
+                    color = Color.White,
+                    style = TextStyle(
+                        fontFamily = AppTypography.body1.fontFamily,
+                        fontWeight = AppTypography.body1.fontWeight,
+                        fontSize = subtitleFontSize
+                    ),
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(24.dp),
-                    tint = Color.White
+                        .align(Alignment.Start)
+                        .padding(start = 45.dp, top = 10.dp)
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Editar perfil", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
+        // Main Content
+        Box(
+            modifier = Modifier
+                .constrainAs(form) {
+                    top.linkTo(guidelineTop)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    bottom.linkTo(parent.bottom)
+                }
+                .fillMaxHeight(0.85f)
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                )
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = MaterialTheme.shapes.medium,
-                elevation = 8.dp
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Nombre") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text("Teléfono") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Correo") },
-                        modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Profile Image with Edit Button
+                Box(
+                    modifier = Modifier
+                        .size(screenWidth * 0.3f)
+                ) {
+                    Image(
+                        painter = painterResource(id = selectedImage),
+                        contentDescription = "Profile Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .clickable { showImagePopup = true },
+                        contentScale = ContentScale.Crop
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            // Guardar y volver
-                            navController.popBackStack()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF008000))
-                    ) {
-                        Text("Guardar", color = Color.White)
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Icon",
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(28.dp)
+                            .background(Color(0xFF00933B), CircleShape)
+                            .padding(6.dp),
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Form Fields
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = {
+                        Text(
+                            "Nombre",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = {
+                        Text(
+                            "Teléfono",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = {
+                        Text(
+                            "Correo electrónico",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontFamily = AppTypography.body1.fontFamily,
+                                fontWeight = AppTypography.body1.fontWeight,
+                                fontSize = 16.sp
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF00933B),
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        backgroundColor = Color(0xFFE7E7E7)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Save Button
+                Button(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00933B)
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        "Guardar cambios",
+                        style = TextStyle(
+                            fontFamily = AppTypography.button.fontFamily,
+                            fontWeight = AppTypography.button.fontWeight,
+                            fontSize = 18.sp
+                        ),
+                        color = Color.White
+                    )
                 }
             }
         }
 
-        // AlertDialog para seleccionar imagen
+        // Avatar Selection Dialog
         if (showImagePopup) {
             AlertDialog(
                 onDismissRequest = { showImagePopup = false },
@@ -129,7 +289,7 @@ fun EditProfileScreen(navController: NavController) {
                                             painter = painterResource(id = imgId),
                                             contentDescription = "Avatar $index",
                                             modifier = Modifier
-                                                .size(60.dp)
+                                                .size(screenWidth * 0.15f)
                                                 .padding(4.dp)
                                                 .clip(CircleShape)
                                                 .clickable {
