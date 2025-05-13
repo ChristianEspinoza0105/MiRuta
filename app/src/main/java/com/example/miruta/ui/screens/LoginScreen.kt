@@ -27,6 +27,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -40,6 +41,21 @@ fun LoginScreen(
 
     val loginState by authViewModel.loginState.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(loginState) {
+        loginState?.let { state ->
+            Log.d("LoginState", "Login state: $state")
+            if (state == "Login exitoso") {
+                authViewModel.setUserLoggedIn(true)
+                navController.navigate(BottomNavScreen.Explore.route) {
+                    popUpTo("LoginScreen") { inclusive = true }
+                    launchSingleTop = true
+                }
+            } else {
+                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     ConstraintLayout(
         modifier = Modifier
@@ -199,15 +215,9 @@ fun LoginScreen(
                             Toast.makeText(context, "El correo electrónico no puede estar vacío.", Toast.LENGTH_SHORT).show()
                         } else if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
                             Toast.makeText(context, "Correo electrónico no válido.", Toast.LENGTH_SHORT).show()
-                        }
-
-                        if (trimmedPassword.isEmpty()) {
+                        } else if (trimmedPassword.isEmpty()) {
                             Toast.makeText(context, "La contraseña no puede estar vacía.", Toast.LENGTH_SHORT).show()
-                        }
-
-                        if (trimmedEmail.isNotEmpty() && trimmedPassword.isNotEmpty() &&
-                            trimmedEmail.contains("@") && trimmedEmail.contains(".") &&
-                            trimmedPassword.isNotEmpty()) {
+                        } else {
                             authViewModel.login(trimmedEmail, trimmedPassword)
                         }
                     },
@@ -232,18 +242,21 @@ fun LoginScreen(
                             modifier = Modifier.padding(top = 16.dp)
                         )
 
-                        if (state == "Login exitoso") {
-                            LaunchedEffect(state) {
-                                navController.navigate("ProfileScreen") {
-                                    popUpTo("LoginScreen") { inclusive = true }
+                        LaunchedEffect(state) {
+                            Log.d("LoginState", "Login state: $state")
+                            when (state) {
+                                "Login exitoso" -> {
+                                    authViewModel.setUserLoggedIn(true)
+                                    navController.navigate(BottomNavScreen.Explore.route) {
+                                        popUpTo("LoginScreen") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
                                 }
-                                loginState.value = null
+                                !in listOf(null, "") -> {
+                                    Toast.makeText(context, state, Toast.LENGTH_LONG).show()
+                                }
                             }
-                        } else if (state != null) {
-                            LaunchedEffect(state) {
-                                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
-                                loginState.value = null
-                            }
+                            loginState.value = null
                         }
                     }
                 }
