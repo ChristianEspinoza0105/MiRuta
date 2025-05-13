@@ -277,7 +277,7 @@
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.white_location),
+                        painter = painterResource(id = R.drawable.ic_location_myroute),
                         contentDescription = null,
                         modifier = Modifier.size(36.dp)
                     )
@@ -291,7 +291,7 @@
                 ) {
                     Box() {
                         Image(
-                            painter = painterResource(id = R.drawable.equis),
+                            painter = painterResource(id = R.drawable.ic_exit),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -404,7 +404,7 @@
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.clock),
+                        painter = painterResource(id = R.drawable.ic_white_clock),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -421,7 +421,7 @@
                 ) {
                     Box() {
                         Image(
-                            painter = painterResource(id = R.drawable.equis),
+                            painter = painterResource(id = R.drawable.ic_exit),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -523,7 +523,7 @@
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.clock),
+                                painter = painterResource(id = R.drawable.ic_clock_route),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -559,7 +559,7 @@
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.white_star),
+                        painter = painterResource(id = R.drawable.ic_white_star),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -576,7 +576,7 @@
                 ) {
                     Box() {
                         Image(
-                            painter = painterResource(id = R.drawable.equis),
+                            painter = painterResource(id = R.drawable.ic_exit),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -611,14 +611,14 @@
                             modifier = Modifier
                                 .border(
                                     width = 4.dp,
-                                    color = Color.Yellow,
+                                    color = Color(0xFFF3CF21),
                                     shape = RoundedCornerShape(15.dp)
                                 )
                                 .size(68.dp)
     
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.bus),
+                                painter = painterResource(id = R.drawable.ic_route_favorite),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(62.dp)
@@ -651,14 +651,14 @@
                             modifier = Modifier
                                 .border(
                                     width = 4.dp,
-                                    color = Color.Yellow,
+                                    color = Color(0xFFF3CF21),
                                     shape = RoundedCornerShape(15.dp)
                                 )
                                 .size(68.dp)
     
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.white_location),
+                                painter = painterResource(id = R.drawable.ic_location_myroute),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(62.dp)
@@ -705,12 +705,12 @@
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .border(width = 4.dp, color = Color.Yellow, shape = RoundedCornerShape(15.dp))
+                        .border(width = 4.dp, color = Color(0xFFF3CF21), shape = RoundedCornerShape(15.dp))
                         .size(44.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.bus),
+                        painter = painterResource(id = R.drawable.ic_route_favorite),
                         contentDescription = null,
                         modifier = Modifier.size(36.dp)
                     )
@@ -724,7 +724,7 @@
                 ) {
                     Box {
                         Image(
-                            painter = painterResource(id = R.drawable.equis),
+                            painter = painterResource(id = R.drawable.ic_exit),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -768,8 +768,6 @@
                         color = parseRouteColor(route.routeColor),
                         icon = icon,
                         onClick = {
-                            val colorHex = route.routeColor ?: "000000"
-                            navController.navigate("routeMap/${route.routeId}/$colorHex")
                         }
                     )
                 }
@@ -786,13 +784,13 @@
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .border(width = 4.dp, color = Color.Yellow, shape = RoundedCornerShape(15.dp))
+                    .border(width = 4.dp, color = Color(0xFFF3CF21), shape = RoundedCornerShape(15.dp))
                     .size(44.dp),
                 contentAlignment = Alignment.Center
     
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.white_location),
+                    painter = painterResource(id = R.drawable.ic_location_myroute),
                     contentDescription = null,
                     modifier = Modifier.size(36.dp)
                 )
@@ -806,7 +804,7 @@
             ) {
                 Box() {
                     Image(
-                        painter = painterResource(id = R.drawable.equis),
+                        painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -865,7 +863,7 @@
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
-                        painter = painterResource(id = R.drawable.mapa),
+                        painter = painterResource(id = R.drawable.ic_mapa),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp)
                     )
@@ -964,12 +962,12 @@
             ) {
                 Box(
                     modifier = Modifier
-                        .border(width = 4.dp, color = Color.Yellow, shape = RoundedCornerShape(15.dp))
+                        .border(width = 4.dp, color = Color(0xFFF3CF21), shape = RoundedCornerShape(15.dp))
                         .size(44.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.white_location),
+                        painter = painterResource(id = R.drawable.ic_location_myroute),
                         contentDescription = null,
                         modifier = Modifier.size(36.dp)
                     )
@@ -983,7 +981,7 @@
                 ) {
                     Box() {
                         Image(
-                            painter = painterResource(id = R.drawable.equis),
+                            painter = painterResource(id = R.drawable.ic_exit),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -1159,7 +1157,7 @@
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.star),
+                            painter = painterResource(id = R.drawable.ic_star),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
@@ -1200,7 +1198,7 @@
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.clock),
+                            painter = painterResource(id = R.drawable.ic_clock_route),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )

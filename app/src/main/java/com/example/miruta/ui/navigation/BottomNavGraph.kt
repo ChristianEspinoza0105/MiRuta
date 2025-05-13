@@ -49,7 +49,7 @@ fun BottomNavGraph(
                 LinesScreen(navController)
             }
             composable(BottomNavScreen.MyRoute.route) {
-                MyRouteScreen()
+                MyRouteScreen(navController)
             }
             composable(
                 route = "routeMap/{routeId}/{color}/{routeShortName}",
