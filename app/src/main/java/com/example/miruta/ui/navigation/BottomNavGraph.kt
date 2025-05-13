@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.miruta.ui.screens.ChatScreen
 import com.example.miruta.ui.screens.CommunityScreen
+import com.example.miruta.ui.screens.EditProfileScreen
 import com.example.miruta.ui.screens.ExploreScreen
 import com.example.miruta.ui.screens.LinesScreen
 import com.example.miruta.ui.screens.MapScreen
@@ -44,13 +45,17 @@ fun BottomNavGraph(
                 ChatScreen(routeName = routeName)
             }
 
-
             composable(BottomNavScreen.Lines.route) {
                 LinesScreen(navController)
             }
             composable(BottomNavScreen.MyRoute.route) {
                 MyRouteScreen(navController)
             }
+
+            composable("EditProfileScreen") {
+                EditProfileScreen(navController)
+            }
+
             composable(
                 route = "routeMap/{routeId}/{color}/{routeShortName}",
                 arguments = listOf(
@@ -77,6 +82,7 @@ fun BottomNavGraph(
             composable("RegisterDriverScreen") {
                 RegisterDriverScreen(navController)
             }
+
             composable(BottomNavScreen.Auth(isUserLoggedIn).route) {
                 if (isUserLoggedIn) {
                     ProfileScreen(navController)
