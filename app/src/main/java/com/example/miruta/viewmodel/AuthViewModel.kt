@@ -62,6 +62,18 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+    fun registerDriver(email: String, password: String, name: String, phone: String, route: String, plates: String) {
+        viewModelScope.launch {
+            authRepository.registerDriver(email, password, name, phone, route, plates) { success, message ->
+                if (success) {
+                    _registerState.value = "Registro exitoso"
+                    fetchUserData(auth.currentUser?.uid ?: "")
+                } else {
+                    _registerState.value = message
+                }
+            }
+        }
+    }
 
     fun login(email: String, password: String) {
         Log.d("AuthViewModel", "Intentando iniciar sesión con correo: $email")

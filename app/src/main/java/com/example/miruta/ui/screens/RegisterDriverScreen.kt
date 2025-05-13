@@ -1,5 +1,8 @@
 package com.example.miruta.ui.screens
 
+import android.util.Log
+import android.util.Patterns
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +21,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,6 +42,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -48,8 +55,9 @@ fun RegisterDriverScreen(
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var rute by remember { mutableStateOf("") }
+    var route by remember { mutableStateOf("") }
     var plates by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     ConstraintLayout(
         modifier = Modifier.fillMaxSize()
@@ -89,7 +97,7 @@ fun RegisterDriverScreen(
                         .padding(start = 40.dp, top = 35.dp)
                 )
                 Text(
-                    text = "Always on route. Sign in.",
+                    text = "Always on route. Sign up.",
                     color = Color.White,
                     style = TextStyle(
                         fontFamily = AppTypography.body1.fontFamily,
@@ -119,7 +127,7 @@ fun RegisterDriverScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Sign in",
+                    text = "Sign up",
                     color = Color(0xFF00933B),
                     style = TextStyle(
                         fontFamily = AppTypography.h2.fontFamily,
@@ -210,11 +218,11 @@ fun RegisterDriverScreen(
                 )
 
                 OutlinedTextField(
-                    value = rute,
-                    onValueChange = { rute = it },
+                    value = route,
+                    onValueChange = { route = it },
                     label = {
                         Text(
-                            text = "Rute",
+                            text = "Route",
                             style = TextStyle(
                                 color = Color.DarkGray,
                                 fontFamily = AppTypography.body1.fontFamily,
@@ -290,7 +298,36 @@ fun RegisterDriverScreen(
 
                 Button(
                     onClick = {
+                        val trimmedEmail = email.trim()
+                        val trimmedPassword = password.trim()
+                        val trimmedName = name.trim()
+                        val trimmedPhone = phone.trim()
+                        val trimmedRoute = phone.trim()
+                        val trimmedPlates = phone.trim()
 
+                        when {
+                            trimmedName.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Nombre requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPhone.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            !isValidEmail(trimmedEmail) -> context?.let {
+                                Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPassword.length < 6 -> context?.let {
+                                Toast.makeText(it, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedRoute.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            trimmedPlates.isEmpty() -> context?.let {
+                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            }
+                            else -> {
+                                authViewModel.registerDriver(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone, trimmedRoute, trimmedPlates)
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                     modifier = Modifier
@@ -298,7 +335,7 @@ fun RegisterDriverScreen(
                         .padding(top = 20.dp, start = 45.dp, end = 45.dp)
                 ) {
                     Text(
-                        text = "Sign in",
+                        text = "Sign up",
                         color = Color.White,
                         style = TextStyle(
                             fontFamily = AppTypography.button.fontFamily,
@@ -306,6 +343,21 @@ fun RegisterDriverScreen(
                             fontSize = 24.sp
                         )
                     )
+                }
+
+                val registerState by authViewModel.registerState.collectAsState()
+
+                LaunchedEffect(registerState) {
+                    Log.d("RegisterState", "Register state: $registerState")
+                    if (registerState == "Registro exitoso") {
+                        authViewModel.setUserLoggedIn(true)
+                        navController.navigate(BottomNavScreen.Explore.route) {
+                            popUpTo("RegisterScreen") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    } else if (!registerState.isNullOrBlank()) {
+                        Toast.makeText(context, registerState, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
@@ -331,4 +383,8 @@ fun RegisterDriverScreen(
                 .zIndex(1f)
         )
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
