@@ -1,67 +1,235 @@
 package com.example.miruta.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Divider
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.delay
+import androidx.navigation.NavController
+import com.example.miruta.R
+import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
+
+private val avatarResources = listOf(
+    R.drawable.avatar_placeholder_1,
+    R.drawable.avatar_placeholder_2,
+    R.drawable.avatar_placeholder_3,
+    R.drawable.avatar_placeholder_4,
+    R.drawable.avatar_placeholder_5,
+    R.drawable.avatar_placeholder_6,
+    R.drawable.avatar_placeholder_7,
+    R.drawable.avatar_placeholder_8,
+    R.drawable.avatar_placeholder_9,
+    R.drawable.avatar_placeholder_10
+)
+
+private fun getAvatarResource(index: Int): Int {
+    return avatarResources.getOrElse(index % avatarResources.size) { R.drawable.avatar_placeholder_1 }
+}
 
 @Composable
 fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
-    val isUserLoggedIn by authViewModel.isUserLoggedIn.collectAsState()
-    var isVisible by remember { mutableStateOf(true) }
-    var shouldNavigate by remember { mutableStateOf(false) }
+    var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
+    var showImagePopup by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFF00933B))
     ) {
-        if (isUserLoggedIn) {
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = fadeIn(),
-                exit = fadeOut()
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Parte superior: Imagen de perfil y texto centrado
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray)
+                        .clickable { showImagePopup = true }
+                ) {
+                    Image(
+                        painter = painterResource(id = selectedImage),
+                        contentDescription = "Profile Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "User",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Fondo gris con tarjeta blanca encima
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF00933B))
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.90f) // 20% más corta que la tarjeta blanca
+                        .align(Alignment.BottomCenter)
+                        .background(Color(0xFFE0E0E0), shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                ) {  }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.88f)
+                        .fillMaxHeight()
+                        .align(Alignment.TopCenter)
+                        .background(Color.White, shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                        .padding(vertical = 24.dp)
                 ) {
-                    Text(text = "Bienvenido al perfil")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = {
-                        isVisible = false
+                    // Opción: Edit profile
+                    ProfileOption(
+                        icon = Icons.Default.Edit,
+                        iconColor = Color(0xFFFFC107), // Amarillo
+                        text = "Edit profile",
+                        textColor = Color.Black
+                    ) {
+                        navController.navigate("editProfile")
+                    }
+
+                    Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
+
+                    // Opción: Notifications
+                    ProfileOption(
+                        icon = Icons.Default.Notifications,
+                        iconColor = Color(0xFFFFC107), // Amarillo
+                        text = "Notifications",
+                        textColor = Color.Black
+                    ) {
+                        // acción para notificaciones (si aplica)
+                    }
+
+                    Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
+
+                    // Opción: Log out
+                    ProfileOption(
+                        icon = Icons.Default.ExitToApp,
+                        iconColor = Color.Red,
+                        text = "Log out",
+                        textColor = Color.Black
+                    ) {
                         authViewModel.logout()
-                        shouldNavigate = true
-                    }) {
-                        Text(text = "Cerrar sesión")
+                        navController.navigate("LoginScreen") {
+                            popUpTo("explore") { inclusive = true }
+                        }
                     }
                 }
             }
         }
-    }
 
-    if (shouldNavigate) {
-        LaunchedEffect(Unit) {
-            delay(500)
-            navController.navigate("LoginScreen") {
-                popUpTo("explore") { inclusive = true }
-            }
-            shouldNavigate = false
+        // Popup de selección de imagen
+        if (showImagePopup) {
+            AlertDialog(
+                onDismissRequest = { showImagePopup = false },
+                text = {
+                    LazyColumn {
+                        items((0 until 20 step 4).toList()) { rowIndex ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                for (columnIndex in 0 until 4) {
+                                    val index = rowIndex + columnIndex
+                                    if (index < 20) {
+                                        val imgId = getAvatarResource(index)
+                                        Image(
+                                            painter = painterResource(id = imgId),
+                                            contentDescription = "Avatar $index",
+                                            modifier = Modifier
+                                                .size(60.dp)
+                                                .padding(4.dp)
+                                                .clip(CircleShape)
+                                                .clickable {
+                                                    selectedImage = imgId
+                                                    showImagePopup = false
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                buttons = {}
+            )
         }
+    }
+}
+
+
+@Composable
+fun ProfileOption(
+    icon: ImageVector,
+    iconColor: Color,
+    text: String,
+    textColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            color = textColor
+        )
     }
 }
