@@ -41,8 +41,10 @@ fun BottomNavGraph(
             }
             composable("chat/{routeName}") { backStackEntry ->
                 val routeName = backStackEntry.arguments?.getString("routeName") ?: "Unknown"
-                ChatScreen(routeName = routeName, navController = navController)
+                ChatScreen(routeName = routeName)
             }
+
+
             composable(BottomNavScreen.Lines.route) {
                 LinesScreen(navController)
             }
@@ -50,16 +52,19 @@ fun BottomNavGraph(
                 MyRouteScreen()
             }
             composable(
-                route = "routeMap/{routeId}/{color}",
+                route = "routeMap/{routeId}/{color}/{routeShortName}",
                 arguments = listOf(
                     navArgument("routeId") { type = NavType.StringType },
                     navArgument("color") { type = NavType.StringType },
+                    navArgument("routeShortName") { type = NavType.StringType }
                 )
             ) { back ->
                 val id = back.arguments!!.getString("routeId")!!
                 val hex = back.arguments!!.getString("color")!!
-                MapScreen(routeId = id, routeColorHex = hex)
+                val string = back.arguments!!.getString("routeShortName")!!
+                MapScreen(routeId = id, routeColorHex = hex, routeShortName = string)
             }
+
             composable("RegisterScreen") {
                 RegisterScreen(navController)
             }

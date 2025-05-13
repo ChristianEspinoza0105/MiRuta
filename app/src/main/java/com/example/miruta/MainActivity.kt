@@ -35,7 +35,9 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                val showBottomBar = currentRoute?.startsWith("chat/") == false
+                val showBottomBar = currentRoute?.startsWith("chat/") == false &&
+                        currentRoute?.startsWith("routeMap/") == false
+
 
                 Scaffold(
                     bottomBar = {

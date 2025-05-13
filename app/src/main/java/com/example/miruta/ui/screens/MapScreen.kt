@@ -22,13 +22,22 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.MapStyleOptions
 import kotlinx.coroutines.Dispatchers
 import android.location.Location
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.miruta.ui.theme.AppTypography
 import kotlin.math.*
+import com.google.android.gms.maps.model.JointType
 import kotlinx.coroutines.withContext
 
 @Composable
 fun MapScreen(
     routeId: String,
-    routeColorHex: String
+    routeColorHex: String,
+    routeShortName: String
 ) {
     val context = LocalContext.current
     val mapStyleOptions = remember {
@@ -100,29 +109,58 @@ fun MapScreen(
         ))
     }.getOrDefault(Color.Black)
 
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraState,
-        properties = MapProperties(mapStyleOptions = mapStyleOptions)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        segments.values.forEach { points ->
-            Polyline(
-                points = points.map { LatLng(it.lat, it.lng) },
-                width = 20f,
-                color = strokeColor
-            )
-
-            drawStops(stopPoints, points, cameraState)
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraState,
+            properties = MapProperties(mapStyleOptions = mapStyleOptions)
+        ) {
+            segments.values.forEach { points ->
+                Polyline(
+                    points = points.map { LatLng(it.lat, it.lng) },
+                    width = 20f,
+                    color = strokeColor,
+                    jointType = JointType.ROUND,
+                    startCap = com.google.android.gms.maps.model.RoundCap(),
+                    endCap = com.google.android.gms.maps.model.RoundCap()
+                )
+                drawStops(stopPoints, points, cameraState)
+            }
         }
 
-        Marker(
-            state = rememberMarkerState(position = LatLng(shapePoints.first().lat, shapePoints.first().lng)),
-            title = "Inicio"
-        )
-        Marker(
-            state = rememberMarkerState(position = LatLng(shapePoints.last().lat, shapePoints.last().lng)),
-            title = "Fin"
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.White)
+                    .height(56.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxSize().padding(start = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = routeShortName,
+                        color = strokeColor,
+                        style = TextStyle(
+                            fontFamily = AppTypography.h2.fontFamily,
+                            fontWeight = AppTypography.h2.fontWeight,
+                            fontSize = 34.sp
+                        ),
+                    )
+                }
+            }
+        }
     }
 }
 

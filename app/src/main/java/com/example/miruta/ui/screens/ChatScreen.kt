@@ -26,7 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import com.example.miruta.ui.theme.AppTypography
 
 @Composable
-fun ChatScreen(routeName: String, navController: NavController) {
+fun ChatScreen(routeName: String) {
     var message by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(listOf<String>()) }
 
