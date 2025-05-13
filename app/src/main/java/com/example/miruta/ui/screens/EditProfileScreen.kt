@@ -30,6 +30,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.example.miruta.ui.theme.AppTypography
 
@@ -61,211 +62,212 @@ fun EditProfileScreen(navController: NavController) {
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val titleFontSize = (screenWidth.value * 0.08).sp
-    val subtitleFontSize = (screenWidth.value * 0.04).sp
 
-    ConstraintLayout(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
-        val (header, form) = createRefs()
-        val guidelineTop = createGuidelineFromTop(0.2f)
-
-        // Header Section
-        Box(
-            modifier = Modifier
-                .constrainAs(header) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .fillMaxWidth()
-                .height(175.dp)
-                .background(Color(0xFF00933B))
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Editar Perfil",
-                    color = Color.White,
-                    style = TextStyle(
-                        fontFamily = AppTypography.h1.fontFamily,
-                        fontWeight = AppTypography.h1.fontWeight,
-                        fontSize = titleFontSize
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 40.dp, top = 30.dp)
-                )
-                Text(
-                    text = "Actualiza tu información personal",
-                    color = Color.White,
-                    style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
-                        fontSize = subtitleFontSize
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 45.dp, top = 10.dp)
-                )
-            }
-        }
-
-        // Main Content
-        Box(
-            modifier = Modifier
-                .constrainAs(form) {
-                    top.linkTo(guidelineTop)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                    bottom.linkTo(parent.bottom)
-                }
-                .fillMaxHeight(0.85f)
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                )
-        ) {
+            // Parte superior: Imagen de perfil centrada
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Profile Image with Edit Button
                 Box(
                     modifier = Modifier
-                        .size(screenWidth * 0.3f)
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray)
+                        .clickable { showImagePopup = true }
                 ) {
                     Image(
                         painter = painterResource(id = selectedImage),
                         contentDescription = "Profile Image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .clickable { showImagePopup = true },
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
-                    )
-
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Icon",
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(28.dp)
-                            .background(Color(0xFF00933B), CircleShape)
-                            .padding(6.dp),
-                        tint = Color.White
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Form Fields
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = {
-                        Text(
-                            "Nombre",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                Text(
+                    text = "User",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = {
-                        Text(
-                            "Teléfono",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
+            // Fondo gris con tarjeta blanca encima
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF00933B))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.90f) // 20% más corta que la tarjeta blanca
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            color = Color(0xFFE0E0E0),
+                            shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                         )
-                    },
+                ) {  }
+
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = {
-                        Text(
-                            "Correo electrónico",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
+                        .fillMaxWidth(0.88f)
+                        .fillMaxHeight()
+                        .align(Alignment.TopCenter)
+                        .background(
+                            color = Color.White,
+                            shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                         )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Save Button
-                Button(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00933B)
-                    ),
-                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Text(
-                        "Guardar cambios",
-                        style = TextStyle(
-                            fontFamily = AppTypography.button.fontFamily,
-                            fontWeight = AppTypography.button.fontWeight,
-                            fontSize = 18.sp
-                        ),
-                        color = Color.White
-                    )
+                    // Título "Edit Profile" con icono de lápiz
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp, start = 32.dp, end = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Icon",
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Edit Profile",
+                            color = Color.Black,
+                            fontSize = 18.sp,
+                            fontFamily = AppTypography.body1.fontFamily,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Form Fields
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = {
+                                Text(
+                                    "Name",
+                                    style = TextStyle(
+                                        color = Color.Gray,
+                                        fontFamily = AppTypography.body1.fontFamily,
+                                        fontWeight = AppTypography.body1.fontWeight,
+                                        fontSize = 16.sp
+                                    )
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFF00933B),
+                                unfocusedBorderColor = Color(0xFFE7E7E7),
+                                backgroundColor = Color.White
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { phone = it },
+                            label = {
+                                Text(
+                                    "Phone Number",
+                                    style = TextStyle(
+                                        color = Color.Gray,
+                                        fontFamily = AppTypography.body1.fontFamily,
+                                        fontWeight = AppTypography.body1.fontWeight,
+                                        fontSize = 16.sp
+                                    )
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFF00933B),
+                                unfocusedBorderColor = Color(0xFFE7E7E7),
+                                backgroundColor = Color.White
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = {
+                                Text(
+                                    "Email",
+                                    style = TextStyle(
+                                        color = Color.Gray,
+                                        fontFamily = AppTypography.body1.fontFamily,
+                                        fontWeight = AppTypography.body1.fontWeight,
+                                        fontSize = 16.sp
+                                    )
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFF00933B),
+                                unfocusedBorderColor = Color(0xFFE7E7E7),
+                                backgroundColor = Color.White
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Save Button
+                        Button(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00933B)
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                "Save",
+                                style = TextStyle(
+                                    fontFamily = AppTypography.button.fontFamily,
+                                    fontWeight = AppTypography.button.fontWeight,
+                                    fontSize = 18.sp
+                                ),
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }

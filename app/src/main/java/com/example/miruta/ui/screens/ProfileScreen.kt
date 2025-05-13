@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.*
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,23 +23,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
-
-
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.constraintlayout.compose.ConstraintLayout
-
 
 private val avatarResources = listOf(
     R.drawable.avatar_placeholder_1,
@@ -52,96 +51,35 @@ private val avatarResources = listOf(
 )
 
 private fun getAvatarResource(index: Int): Int {
-    return avatarResources.getOrElse(index) { R.drawable.avatar_placeholder_1 }
+    return avatarResources.getOrElse(index % avatarResources.size) { R.drawable.avatar_placeholder_1 }
 }
 
 @Composable
 fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
     var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
     var showImagePopup by remember { mutableStateOf(false) }
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val titleFontSize = (screenWidth.value * 0.08).sp
-    val subtitleFontSize = (screenWidth.value * 0.04).sp
 
-    ConstraintLayout(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
-        val (header, form, image) = createRefs()
-        val guidelineTop = createGuidelineFromTop(0.2f)
-
-        // Header Section
-        Box(
-            modifier = Modifier
-                .constrainAs(header) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-                .fillMaxWidth()
-                .height(175.dp)
-                .background(Color(0xFF00933B))
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Mi Perfil",
-                    color = Color.White,
-                    style = TextStyle(
-                        fontFamily = AppTypography.h1.fontFamily,
-                        fontWeight = AppTypography.h1.fontWeight,
-                        fontSize = titleFontSize
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 40.dp, top = 30.dp)
-                )
-                Text(
-                    text = "Administra tu información personal",
-                    color = Color.White,
-                    style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
-                        fontSize = subtitleFontSize
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 45.dp, top = 10.dp)
-                )
-            }
-        }
-
-        // Main Content
-        Box(
-            modifier = Modifier
-                .constrainAs(form) {
-                    top.linkTo(guidelineTop)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                    bottom.linkTo(parent.bottom)
-                }
-                .fillMaxHeight(0.85f)
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                )
-        ) {
+            // Parte superior: Imagen de perfil y texto centrado
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Profile Image
                 Box(
                     modifier = Modifier
-                        .size(screenWidth * 0.3f)
+                        .size(100.dp)
                         .clip(CircleShape)
-                        .clickable { showImagePopup = true }
                         .background(Color.LightGray)
+                        .clickable { showImagePopup = true }
                 ) {
                     Image(
                         painter = painterResource(id = selectedImage),
@@ -151,52 +89,71 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    "User",
-                    style = TextStyle(
-                        fontFamily = AppTypography.h2.fontFamily,
-                        fontWeight = AppTypography.h2.fontWeight,
-                        fontSize = 24.sp
-                    ),
-                    color = Color(0xFF00933B)
+                    text = "User",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Profile Options
-                Column(modifier = Modifier.fillMaxWidth()) {
+            // Fondo gris con tarjeta blanca encima
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF00933B))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.90f) // 20% más corta que la tarjeta blanca
+                        .align(Alignment.BottomCenter)
+                        .background(Color(0xFFE0E0E0), shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                ) {  }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.88f)
+                        .fillMaxHeight()
+                        .align(Alignment.TopCenter)
+                        .background(Color.White, shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
+                        .padding(vertical = 24.dp)
+                ) {
+                    // Opción: Edit profile
                     ProfileOption(
                         icon = Icons.Default.Edit,
-                        text = "Editar perfil",
-                        color = Color(0xFF00933B)
+                        iconColor = Color(0xFFFFC107), // Amarillo
+                        text = "Edit profile",
+                        textColor = Color.Black
                     ) {
                         navController.navigate("editProfile")
                     }
 
-                    Divider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = Color.LightGray,
-                        thickness = 1.dp
-                    )
+                    Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
 
+                    // Opción: Notifications
                     ProfileOption(
                         icon = Icons.Default.Notifications,
-                        text = "Notificaciones",
-                        color = Color(0xFF00933B)
-                    ) {}
+                        iconColor = Color(0xFFFFC107), // Amarillo
+                        text = "Notifications",
+                        textColor = Color.Black
+                    ) {
+                        // acción para notificaciones (si aplica)
+                    }
 
-                    Divider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = Color.LightGray,
-                        thickness = 1.dp
-                    )
+                    Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
 
+                    // Opción: Log out
                     ProfileOption(
                         icon = Icons.Default.ExitToApp,
-                        text = "Cerrar sesión",
-                        color = Color.Red
+                        iconColor = Color.Red,
+                        text = "Log out",
+                        textColor = Color.Black
                     ) {
                         authViewModel.logout()
                         navController.navigate("LoginScreen") {
@@ -207,7 +164,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
             }
         }
 
-        // Avatar Selection Dialog
+        // Popup de selección de imagen
         if (showImagePopup) {
             AlertDialog(
                 onDismissRequest = { showImagePopup = false },
@@ -226,7 +183,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                                             painter = painterResource(id = imgId),
                                             contentDescription = "Avatar $index",
                                             modifier = Modifier
-                                                .size(screenWidth * 0.15f)
+                                                .size(60.dp)
                                                 .padding(4.dp)
                                                 .clip(CircleShape)
                                                 .clickable {
@@ -246,30 +203,33 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
     }
 }
 
+
 @Composable
-fun ProfileOption(icon: ImageVector, text: String, color: Color = Color(0xFF00933B), onClick: () -> Unit) {
+fun ProfileOption(
+    icon: ImageVector,
+    iconColor: Color,
+    text: String,
+    textColor: Color = Color.Black,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp, horizontal = 24.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = text,
-            tint = color,
-            modifier = Modifier.size(28.dp)
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            style = TextStyle(
-                fontFamily = AppTypography.body1.fontFamily,
-                fontWeight = AppTypography.body1.fontWeight,
-                fontSize = 18.sp
-            ),
-            color = color
+            fontSize = 16.sp,
+            color = textColor
         )
     }
 }
