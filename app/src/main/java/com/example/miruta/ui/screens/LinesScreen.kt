@@ -101,11 +101,12 @@ fun LinesScreen(navController: NavController) {
                         modifier = Modifier
                             .padding(8.dp)
                             .size(24.dp),
-                        tint = Color(0xFF00933B))
+                        tint = Color(0xFF00933B)
+                    )
                 },
                 trailingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = "Buscar",
                         modifier = Modifier
                             .padding(8.dp)
@@ -117,47 +118,6 @@ fun LinesScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        AnimatedVisibility(
-            visible = searchQuery.isEmpty() && selectedTransport == null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column {
-                val imageFilters = listOf(
-                    R.drawable.mi_transporte to "mi_transporte",
-                    R.drawable.mi_tren to "mi_tren",
-                    R.drawable.mi_macro to "mi_macro"
-                )
-
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    items(imageFilters) { (imageRes, filterType) ->
-                        Box(
-                            modifier = Modifier
-                                .width(200.dp)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    selectedTransport = if (selectedTransport == filterType) null else filterType
-                                }
-                        ) {
-                            Image(
-                                painter = painterResource(id = imageRes),
-                                contentDescription = "Option image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                }
-            }
-        }
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
@@ -179,12 +139,54 @@ fun LinesScreen(navController: NavController) {
         Divider(
             color = Color(0xFFE0E0E0),
             thickness = 1.dp,
-            modifier = Modifier
-                .padding(vertical = 0.dp)
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
 
-        LazyColumn {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            item {
+                AnimatedVisibility(
+                    visible = searchQuery.isEmpty() && selectedTransport == null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    val imageFilters = listOf(
+                        R.drawable.mi_transporte to "mi_transporte",
+                        R.drawable.mi_tren to "mi_tren",
+                        R.drawable.mi_macro to "mi_macro"
+                    )
+
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        items(imageFilters) { (imageRes, filterType) ->
+                            Box(
+                                modifier = Modifier
+                                    .width(200.dp)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        selectedTransport = if (selectedTransport == filterType) null else filterType
+                                    }
+                            ) {
+                                Image(
+                                    painter = painterResource(id = imageRes),
+                                    contentDescription = "Option image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             items(filtered) { route ->
                 val icon = painterResource(id = R.drawable.ic_busline)
 
@@ -195,7 +197,7 @@ fun LinesScreen(navController: NavController) {
                     icon = icon,
                     onClick = {
                         val colorHex = route.routeColor ?: "000000"
-                        navController.navigate("routeMap/${route.routeId}/$colorHex")
+                        navController.navigate("routeMap/${route.routeId}/$colorHex/${route.routeShortName}")
                     }
                 )
             }
