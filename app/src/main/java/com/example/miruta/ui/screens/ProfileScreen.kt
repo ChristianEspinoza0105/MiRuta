@@ -130,8 +130,11 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                         iconColor = Color(0xFFFFC107), // Amarillo
                         text = "Edit profile",
                         textColor = Color.Black
+
                     ) {
-                        navController.navigate("editProfile")
+                        navController.navigate("EditProfileScreen") {
+                            popUpTo("EditProfileScreen") { inclusive = true }
+                        }
                     }
 
                     Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
