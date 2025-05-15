@@ -7,8 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +16,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.systemBars
@@ -49,7 +46,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
     val senderName = userData?.get("name")?.toString() ?: "Anónimo"
 
     var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
-    var message by remember { mutableStateOf("") } // <- ESTO FALTABA
+    var message by remember { mutableStateOf("") }
 
     LaunchedEffect(routeName) {
         viewModel.listenToMessages(routeName) { newMessages ->
@@ -79,23 +76,21 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .wrapContentSize()
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White)
+                        .background(Color(0xFF00933B))
                         .height(56.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(start = 16.dp)
+                            .padding(horizontal = 16.dp)
                     ) {
-                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = routeName,
-                            color = Color(0xFF00933B),
+                            color = Color.White,
                             style = TextStyle(
                                 fontFamily = AppTypography.h2.fontFamily,
                                 fontWeight = AppTypography.h2.fontWeight,
@@ -111,25 +106,47 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     reverseLayout = true
                 ) {
                     items(messages.reversed()) { msg ->
                         val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
                         Box(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
                             contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
                         ) {
                             Column(
                                 modifier = Modifier
+                                    .widthIn(max = 280.dp)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isOwnMessage) Color(0xFFDCF8C6) else Color.White)
-                                    .padding(12.dp)
+                                    .background(
+                                        if (isOwnMessage) Color(0xFF00933B) else Color(0xFFCFE9DA)
+                                    )
+                                    .padding(14.dp)
                             ) {
                                 if (!isOwnMessage) {
-                                    Text(text = msg.senderName, fontSize = 12.sp, color = Color.Gray)
+                                    Text(
+                                        text = msg.senderName,
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        style = TextStyle(
+                                            fontFamily = AppTypography.body1.fontFamily,
+                                            fontWeight = FontWeight.Normal
+                                        ),
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
                                 }
-                                Text(text = msg.text, fontSize = 16.sp, color = Color.Black)
+                                Text(
+                                    text = msg.text,
+                                    style = TextStyle(
+                                        fontFamily = AppTypography.body1.fontFamily,
+                                        fontWeight = AppTypography.body1.fontWeight,
+                                        fontSize = 16.sp,
+                                        color = if (isOwnMessage) Color(0xFFFFFFFF) else Color.Black
+                                    )
+                                )
                             }
                         }
                     }
@@ -144,7 +161,21 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     TextField(
                         value = message,
                         onValueChange = { message = it },
-                        placeholder = { Text("Escribe un mensaje...") },
+                        placeholder = {
+                            Text(
+                                "Message",
+                                style = TextStyle(
+                                    fontFamily = AppTypography.body1.fontFamily,
+                                    fontWeight = AppTypography.body1.fontWeight,
+                                    fontSize = 16.sp
+                                )
+                            )
+                        },
+                        textStyle = TextStyle(
+                            fontFamily = AppTypography.body1.fontFamily,
+                            fontWeight = AppTypography.body1.fontWeight,
+                            fontSize = 16.sp
+                        ),
                         modifier = Modifier
                             .weight(1f)
                             .height(50.dp),
@@ -163,9 +194,20 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                                 viewModel.sendMessage(routeName, message, senderName)
                                 message = ""
                             }
-                        }
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = Color(0xFF00933B),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .padding(10.dp)
                     ) {
-                        Icon(imageVector = Icons.Filled.Send, contentDescription = "Enviar")
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_send),
+                            contentDescription = "Enviar",
+                            modifier = Modifier.size(34.dp)
+                        )
                     }
                 }
 
