@@ -110,6 +110,9 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     reverseLayout = true
                 ) {
                     items(messages.reversed()) { msg ->
+                        val formattedTime = msg.timestamp?.toDate()?.let {
+                            java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(it)
+                        } ?: ""
                         val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
                         Box(
                             modifier = Modifier
@@ -146,6 +149,17 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                                         fontSize = 16.sp,
                                         color = if (isOwnMessage) Color(0xFFFFFFFF) else Color.Black
                                     )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = formattedTime,
+                                    color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray,
+                                    style = TextStyle(
+                                        fontFamily = AppTypography.body1.fontFamily,
+                                        fontWeight = AppTypography.body1.fontWeight,
+                                        fontSize = 10.sp
+                                    ),
+                                    modifier = Modifier.align(Alignment.End)
                                 )
                             }
                         }
