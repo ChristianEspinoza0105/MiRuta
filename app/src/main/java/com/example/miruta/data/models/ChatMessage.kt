@@ -1,8 +1,8 @@
 package com.example.miruta.data.models
 
 data class ChatMessage(
+    val text: String = "",
     val senderId: String = "",
-    val groupId: String = "",
-    val message: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val senderName: String = "",
+    val timestamp: com.google.firebase.Timestamp? = null
 )

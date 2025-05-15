@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,17 +22,40 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.systemBars
-import com.example.miruta.R
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.miruta.R
+import com.example.miruta.data.models.ChatMessage
+import com.example.miruta.data.repository.AuthRepository
 import com.example.miruta.ui.theme.AppTypography
+import com.example.miruta.ui.viewmodel.AuthViewModel
+import com.example.miruta.ui.viewmodel.AuthViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ChatScreen(routeName: String) {
-    var message by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf(listOf<String>()) }
+fun ChatScreen(routeName: String, repository: AuthRepository) {
 
     val insets = WindowInsets.systemBars.asPaddingValues()
+
+    val factory = AuthViewModelFactory(repository)
+    val authViewModel: AuthViewModel = viewModel(factory = factory)
+
+    val context = LocalContext.current
+    val viewModel = viewModel<AuthViewModel>()
+
+    val userData by viewModel.userData.collectAsState()
+    val senderName = userData?.get("name")?.toString() ?: "Anónimo"
+
+    var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
+    var message by remember { mutableStateOf("") } // <- ESTO FALTABA
+
+    LaunchedEffect(routeName) {
+        viewModel.listenToMessages(routeName) { newMessages ->
+            messages = newMessages
+        }
+    }
 
     Scaffold(
         backgroundColor = Color.Transparent
@@ -63,7 +88,9 @@ fun ChatScreen(routeName: String) {
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxSize().padding(start = 16.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 16.dp)
                     ) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
@@ -88,21 +115,22 @@ fun ChatScreen(routeName: String) {
                     reverseLayout = true
                 ) {
                     items(messages.reversed()) { msg ->
+                        val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.CenterEnd
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
                         ) {
-                            Text(
-                                text = msg,
-                                fontSize = 16.sp,
-                                color = Color.Black,
+                            Column(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFFDCF8C6))
+                                    .background(if (isOwnMessage) Color(0xFFDCF8C6) else Color.White)
                                     .padding(12.dp)
-                            )
+                            ) {
+                                if (!isOwnMessage) {
+                                    Text(text = msg.senderName, fontSize = 12.sp, color = Color.Gray)
+                                }
+                                Text(text = msg.text, fontSize = 16.sp, color = Color.Black)
+                            }
                         }
                     }
                 }
@@ -129,25 +157,15 @@ fun ChatScreen(routeName: String) {
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    IconButton(
                         onClick = {
                             if (message.isNotBlank()) {
-                                messages = messages + message
+                                viewModel.sendMessage(routeName, message, senderName)
                                 message = ""
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B)),
-                        modifier = Modifier
-                            .height(50.dp)
-                            .padding(end = 4.dp),
-                        shape = RoundedCornerShape(24.dp)
+                        }
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_send),
-                            contentDescription = "Enviar mensaje",
-                            tint = Color.White,
-                            modifier = Modifier.size(44.dp)
-                        )
+                        Icon(imageVector = Icons.Filled.Send, contentDescription = "Enviar")
                     }
                 }
 
