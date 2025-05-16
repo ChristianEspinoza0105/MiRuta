@@ -1,5 +1,6 @@
 package com.example.miruta.ui.screens
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.*
@@ -29,8 +30,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.miruta.ui.theme.AppTypography
+import com.google.android.gms.location.LocationServices
 import kotlin.math.*
 import com.google.android.gms.maps.model.JointType
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -39,6 +42,7 @@ fun MapScreen(
     routeColorHex: String,
     routeShortName: String
 ) {
+
     val context = LocalContext.current
     val mapStyleOptions = remember {
         MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style)
@@ -138,20 +142,20 @@ fun MapScreen(
             Spacer(modifier = Modifier.height(14.dp))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .wrapContentSize()
+                    .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White)
-                    .height(56.dp),
+                    .background(strokeColor),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxSize().padding(start = 16.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = routeShortName,
-                        color = strokeColor,
+                        color = Color.White,
                         style = TextStyle(
                             fontFamily = AppTypography.h2.fontFamily,
                             fontWeight = AppTypography.h2.fontWeight,
