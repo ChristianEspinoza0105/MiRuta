@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -31,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
-import androidx.constraintlayout.compose.ConstraintLayout
 import com.example.miruta.ui.theme.AppTypography
 
 
@@ -80,7 +78,7 @@ fun EditProfileScreen(navController: NavController) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(150.dp) // Cambiado de 100.dp a 150.dp
                         .clip(CircleShape)
                         .background(Color.LightGray)
                         .clickable { showImagePopup = true }
@@ -97,9 +95,10 @@ fun EditProfileScreen(navController: NavController) {
 
                 Text(
                     text = "User",
-                    fontSize = 20.sp,
+                    fontSize = 28.sp, // Cambiado de 20.sp a 28.sp
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = AppTypography.h1.fontFamily,
+                    fontWeight = AppTypography.h1.fontWeight,
                     textAlign = TextAlign.Center
                 )
             }
@@ -115,7 +114,7 @@ fun EditProfileScreen(navController: NavController) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.90f) // 20% más corta que la tarjeta blanca
+                        .fillMaxHeight(0.90f)
                         .align(Alignment.BottomCenter)
                         .background(
                             color = Color(0xFFE0E0E0),
@@ -144,15 +143,15 @@ fun EditProfileScreen(navController: NavController) {
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Icon",
                             tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(32.dp) // Cambiado de 24.dp a 32.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Edit Profile",
                             color = Color.Black,
-                            fontSize = 18.sp,
-                            fontFamily = AppTypography.body1.fontFamily,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 24.sp, // Cambiado de 18.sp a 24.sp
+                            fontFamily = AppTypography.h1.fontFamily,
+                            fontWeight = AppTypography.h1.fontWeight
                         )
                     }
 
@@ -175,13 +174,13 @@ fun EditProfileScreen(navController: NavController) {
                                         color = Color.Gray,
                                         fontFamily = AppTypography.body1.fontFamily,
                                         fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 16.sp
+                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
                                     )
                                 )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(60.dp), // Aumentado de 56.dp a 60.dp
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -202,13 +201,13 @@ fun EditProfileScreen(navController: NavController) {
                                         color = Color.Gray,
                                         fontFamily = AppTypography.body1.fontFamily,
                                         fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 16.sp
+                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
                                     )
                                 )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(60.dp), // Aumentado de 56.dp a 60.dp
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -229,13 +228,13 @@ fun EditProfileScreen(navController: NavController) {
                                         color = Color.Gray,
                                         fontFamily = AppTypography.body1.fontFamily,
                                         fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 16.sp
+                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
                                     )
                                 )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(60.dp), // Aumentado de 56.dp a 60.dp
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -251,7 +250,7 @@ fun EditProfileScreen(navController: NavController) {
                             onClick = { navController.popBackStack() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(60.dp), // Aumentado de 56.dp a 60.dp
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF00933B)
                             ),
@@ -262,7 +261,7 @@ fun EditProfileScreen(navController: NavController) {
                                 style = TextStyle(
                                     fontFamily = AppTypography.button.fontFamily,
                                     fontWeight = AppTypography.button.fontWeight,
-                                    fontSize = 18.sp
+                                    fontSize = 20.sp // Cambiado de 18.sp a 20.sp
                                 ),
                                 color = Color.White
                             )
@@ -278,14 +277,14 @@ fun EditProfileScreen(navController: NavController) {
                 onDismissRequest = { showImagePopup = false },
                 text = {
                     LazyColumn {
-                        items((0 until 20 step 4).toList()) { rowIndex ->
+                        items((0 until 19 step 4).toList()) { rowIndex ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 for (columnIndex in 0 until 4) {
                                     val index = rowIndex + columnIndex
-                                    if (index < 20) {
+                                    if (index < 10) {
                                         val imgId = getAvatarResource(index)
                                         Image(
                                             painter = painterResource(id = imgId),
