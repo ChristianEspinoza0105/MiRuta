@@ -32,7 +32,7 @@ class RutaClassifier(context: Context) {
         interpreter.run(input, output)
 
         val prediccion = output[0][0]
-        return prediccion >= 0.4
+        return prediccion >= 0.5
     }
 
 
