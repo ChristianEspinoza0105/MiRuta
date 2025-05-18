@@ -136,35 +136,63 @@ class AuthViewModel @Inject constructor(
     }
 
     //Enviado de mensaje y guardado
-
-    fun sendMessage(routeId: String, messageText: String, senderName: String, context: Context) {
-        //Filtrado de mensajes (primera capa)
-        if (!isMessageAllowed(messageText)) {
-            println("Mensaje bloqueado por filtro rápido: $messageText")
-            return
+    fun sendMessage(
+        routeId: String,
+        messageText: String,
+        senderName: String,
+        context: Context,
+        onError: (String) -> Unit
+    ) {
+        // Validación del mensaje (filtro de contenido)
+        when (val validation = isMessageAllowed(messageText)) {
+            is MessageValidationResult.Denied -> {
+                onError(validation.reason)
+                return
+            }
+            is MessageValidationResult.Allowed -> {
+                // continuar
+            }
+            else -> {
+                onError("Error desconocido en la validación del mensaje.")
+                return
+            }
         }
 
-        //Filtrado de mensajes (segunda capa)
+        // Clasificación semántica (verifica que el mensaje esté relacionado con rutas)
         val clasificador = RutaClassifier(context)
         if (!clasificador.esMensajeRelacionado(messageText)) {
-            println("❌ Mensaje no relacionado con rutas, descartado.")
+            onError("Tu mensaje no está relacionado con rutas.")
             return
         }
 
-        val currentUser = FirebaseAuth.getInstance().currentUser ?: return
+        // Verificación del usuario autenticado
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onError("Usuario no autenticado.")
+            return
+        }
+
+        // Estructura del mensaje a enviar
         val message = mapOf(
             "text" to messageText,
             "senderId" to currentUser.uid,
             "senderName" to senderName,
             "timestamp" to FieldValue.serverTimestamp()
         )
-        firestore.collection("chats").document(routeId)
-            .collection("messages").add(message)
+
+        // Envío del mensaje a Firestore
+        FirebaseFirestore.getInstance()
+            .collection("chats")
+            .document(routeId)
+            .collection("messages")
+            .add(message)
+            .addOnFailureListener { e ->
+                onError("Error al enviar el mensaje: ${e.message}")
+            }
     }
 
     //Filtrado de mensajes (primera capa)
-
-    private fun isMessageAllowed(text: String): Boolean {
+    private fun isMessageAllowed(text: String): MessageValidationResult {
         val forbiddenWords = listOf(
             "idiota", "estupido", "imbecil", "pendejo", "pendeja", "tonto", "tonta", "gilipollas",
             "mierda", "puta", "puto", "puta madre", "coño", "joder", "cabron", "cabrón", "polla",
@@ -180,7 +208,6 @@ class AuthViewModel @Inject constructor(
             "chucha", "huevón", "huevona", "huevonazo", "chingado", "chingada madre",
             "pene", "vagina", "vulva", "chocho", "chochito", "mamada", "putazo", "putita", "pinche",
             "puteada", "chingue tu madre", "chinga tu madre",
-            // Inglés
             "fuck", "shit", "bitch", "asshole", "dick", "pussy", "cock", "cunt", "bastard", "damn",
             "crap", "bollocks", "bugger", "bloody", "arsehole", "wanker", "prick", "twat", "fucker",
             "motherfucker", "nigger", "nigga", "slut", "whore", "douche", "douchebag", "retard",
@@ -188,17 +215,14 @@ class AuthViewModel @Inject constructor(
             "cockface", "fuckface", "dickhead", "dickweed", "asshat", "shitbag", "fuckboy", "shitface",
             "twatface", "bitchass", "dipshit", "shitfuck", "twatwaffle", "clusterfuck", "shitstorm",
             "jackass", "cumdumpster", "assclown", "shitshow",
-            // Violencia y discriminación
             "terrorista", "racista", "homofobo", "misogino", "machista",
             "asesino", "asesina", "matar", "muerte", "violador", "violacion", "violento",
             "genocida", "terrorismo", "asesinato", "golpear", "golpeador", "golpista",
             "racismo", "intolerancia", "discriminacion", "exterminio", "genocidio",
             "exclusion", "opresion", "dictador", "tortura", "secuestrar", "secuestrador",
-            // Sexo explícito
             "porno", "pornografia", "sexo", "sexual", "masturbacion", "orgasmo", "follar",
             "penetracion", "coito", "masturbarse", "pechos", "tetas", "nalgas", "ejaculacion",
             "porn", "fetiche", "pajearse",
-            // Spam
             "gratis", "dinero facil", "trabajo desde casa", "hazte rico", "oferta especial",
             "gana dinero", "inversion segura", "click aqui", "suscribete", "visita",
             "comprar ahora", "haz clic", "oferta", "promocion", "regalo", "premio",
@@ -207,57 +231,59 @@ class AuthViewModel @Inject constructor(
             "dinero rapido", "comprar", "descarga gratis", "envio gratis", "promo", "oferton"
         )
 
-
         val lowerText = text.lowercase().trim()
-        var normalized = text.lowercase().normalizeToAscii().replace(Regex("[^a-z0-9]"), "")
+        val normalized = text.lowercase().normalizeToAscii().replace(Regex("[^a-z0-9]"), "")
 
-        // Bloquea mensajes vacíos o muy cortos
-        if (lowerText.isBlank() || lowerText.length < 3) return false
+        if (lowerText.isBlank() || lowerText.length < 3)
+            return MessageValidationResult.Denied("El mensaje es muy corto o está vacío.")
 
-        // Bloquea mensajes con solo caracteres no alfanuméricos
-        if (!lowerText.any { it.isLetterOrDigit() }) return false
+        if (!lowerText.any { it.isLetterOrDigit() })
+            return MessageValidationResult.Denied("El mensaje no contiene caracteres alfanuméricos.")
 
-        // Bloquea mensajes que contienen links
-        if (lowerText.contains("http://") || lowerText.contains("https://") || lowerText.contains("www.")) return false
+        if (lowerText.contains("http://") || lowerText.contains("https://") || lowerText.contains("www."))
+            return MessageValidationResult.Denied("Los enlaces no están permitidos en el mensaje.")
 
-        // Bloquea si contiene alguna palabra prohibida
         for (word in forbiddenWords) {
             val cleanWord = word.lowercase().normalizeToAscii().replace(Regex("[^a-z0-9]"), "")
             if (cleanWord.isNotEmpty() && normalized.contains(cleanWord)) {
-                return false
+                return MessageValidationResult.Denied("El mensaje contiene palabras no permitidas: \"$word\".")
             }
         }
 
-        // Bloquea mensajes con demasiadas letras repetidas consecutivas
         val maxRepeated = 5
         var count = 1
         for (i in 1 until lowerText.length) {
             if (lowerText[i] == lowerText[i - 1]) {
                 count++
-                if (count > maxRepeated) return false
+                if (count > maxRepeated) return MessageValidationResult.Denied("El mensaje contiene demasiadas letras repetidas consecutivas.")
             } else {
                 count = 1
             }
         }
 
-        // Bloquea abuso de mayúsculas
         if (lowerText.length > 5) {
             val uppercaseCount = text.count { it.isUpperCase() }
             val uppercaseRatio = uppercaseCount.toDouble() / text.length
-            if (uppercaseRatio > 0.7) return false
+            if (uppercaseRatio > 0.7) return MessageValidationResult.Denied("El mensaje contiene abuso de mayúsculas.")
         }
 
-        return true
-    }
+        val words = lowerText.split(Regex("\\s+"))
+        val wordFrequency = mutableMapOf<String, Int>()
+        val maxRepeatedWords = 5
 
-    fun String.normalizeToAscii(): String {
-        val normalized = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD)
-        return Regex("\\p{InCombiningDiacriticalMarks}+").replace(normalized, "")
-    }
+        for (word in words) {
+            val normalizedWord = word.normalizeToAscii().replace(Regex("[^a-z0-9]"), "")
+            if (normalizedWord.isNotEmpty()) {
+                wordFrequency[normalizedWord] = wordFrequency.getOrDefault(normalizedWord, 0) + 1
+                if (wordFrequency[normalizedWord]!! > maxRepeatedWords)
+                    return MessageValidationResult.Denied("El mensaje contiene palabras repetidas demasiadas veces: \"$word\".")
+            }
+        }
 
+        return MessageValidationResult.Allowed
+    }
 
     //Actualización de mensajes
-
     private var listenerRegistration: ListenerRegistration? = null
 
     fun listenToMessages(routeId: String, onMessagesChanged: (List<ChatMessage>) -> Unit) {
@@ -282,4 +308,14 @@ class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelPr
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
+}
+
+sealed class MessageValidationResult {
+    object Allowed : MessageValidationResult()
+    data class Denied(val reason: String) : MessageValidationResult()
+}
+
+fun String.normalizeToAscii(): String {
+    val normalized = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD)
+    return Regex("\\p{InCombiningDiacriticalMarks}+").replace(normalized, "")
 }

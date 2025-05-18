@@ -1,5 +1,13 @@
 package com.example.miruta.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,10 +30,12 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.miruta.R
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
+import com.example.miruta.ui.components.ErrorMessageCard
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.ui.viewmodel.AuthViewModelFactory
@@ -48,19 +58,26 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
     var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
     var message by remember { mutableStateOf("") }
 
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(routeName) {
         viewModel.listenToMessages(routeName) { newMessages ->
             messages = newMessages
         }
     }
 
+    val scaffoldState = rememberScaffoldState()
+
     Scaffold(
+        scaffoldState = scaffoldState,
         backgroundColor = Color.Transparent
     ) { paddingValues ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
         ) {
+
             Image(
                 painter = painterResource(id = R.drawable.background_chat),
                 contentDescription = null,
@@ -129,6 +146,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                                     )
                                     .padding(14.dp)
                             ) {
+
                                 if (!isOwnMessage) {
                                     Text(
                                         text = msg.senderName,
@@ -205,7 +223,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     IconButton(
                         onClick = {
                             if (message.isNotBlank()) {
-                                viewModel.sendMessage(routeName, message, senderName, context)
+                                viewModel.sendMessage(routeName, message, senderName, context, onError = { errorMessage = it })
                                 message = ""
                             }
                         },
@@ -227,6 +245,23 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
 
                 Spacer(modifier = Modifier.height(8.dp))
             }
+
+            if (errorMessage != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 60.dp, start = 12.dp, end = 12.dp)
+                        .align(Alignment.BottomCenter)
+                        .zIndex(1f)
+                ) {
+                    ErrorMessageCard(
+                        message = "Error al enviar mensaje",
+                        reason = errorMessage ?: "",
+                        onDismiss = { errorMessage = null }
+                    )
+                }
+            }
         }
     }
 }
+
