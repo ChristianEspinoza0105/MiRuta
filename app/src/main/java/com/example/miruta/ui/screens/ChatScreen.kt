@@ -205,7 +205,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     IconButton(
                         onClick = {
                             if (message.isNotBlank()) {
-                                viewModel.sendMessage(routeName, message, senderName)
+                                viewModel.sendMessage(routeName, message, senderName, context)
                                 message = ""
                             }
                         },
