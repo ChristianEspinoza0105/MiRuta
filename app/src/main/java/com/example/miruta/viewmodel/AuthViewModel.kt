@@ -194,41 +194,7 @@ class AuthViewModel @Inject constructor(
     //Filtrado de mensajes (primera capa)
     private fun isMessageAllowed(text: String): MessageValidationResult {
         val forbiddenWords = listOf(
-            "idiota", "estupido", "imbecil", "pendejo", "pendeja", "tonto", "tonta", "gilipollas",
-            "mierda", "puta", "puto", "puta madre", "coño", "joder", "cabron", "cabrón", "polla",
-            "culo", "verga", "pinche", "chingar", "chingada", "chingón", "zorra", "maricón", "marica",
-            "pedo", "mamón", "mamona", "culero", "culera", "cojones", "joto", "pajero", "pajera",
-            "tarado", "tarada", "soplapollas", "puto amo", "cabrona", "culia", "culiado", "cagada",
-            "cagón", "cagona", "mamonazo", "mamaguevo", "vergón", "verga", "chinga", "chinga tu madre",
-            "puta que te pario", "puta madre", "perra", "perro", "maldito", "maldita", "mierdoso",
-            "mierdosa", "estúpida", "pendejazo", "boludo", "boluda", "pelotudo", "pelotuda",
-            "tarado mental", "idiotez", "imbecil mental", "lesbiana", "gay", "homosexual",
-            "putamadre", "cabronazo", "chupapollas", "gonorrea", "culiarse", "gilipollas",
-            "gilipollez", "mariconazo", "mamabicho", "bastardo", "sidoso", "sidosa",
-            "chucha", "huevón", "huevona", "huevonazo", "chingado", "chingada madre",
-            "pene", "vagina", "vulva", "chocho", "chochito", "mamada", "putazo", "putita", "pinche",
-            "puteada", "chingue tu madre", "chinga tu madre",
-            "fuck", "shit", "bitch", "asshole", "dick", "pussy", "cock", "cunt", "bastard", "damn",
-            "crap", "bollocks", "bugger", "bloody", "arsehole", "wanker", "prick", "twat", "fucker",
-            "motherfucker", "nigger", "nigga", "slut", "whore", "douche", "douchebag", "retard",
-            "dumbass", "shithead", "moron", "loser", "idiot", "stupid", "jerk", "asswipe",
-            "cockface", "fuckface", "dickhead", "dickweed", "asshat", "shitbag", "fuckboy", "shitface",
-            "twatface", "bitchass", "dipshit", "shitfuck", "twatwaffle", "clusterfuck", "shitstorm",
-            "jackass", "cumdumpster", "assclown", "shitshow",
-            "terrorista", "racista", "homofobo", "misogino", "machista",
-            "asesino", "asesina", "matar", "muerte", "violador", "violacion", "violento",
-            "genocida", "terrorismo", "asesinato", "golpear", "golpeador", "golpista",
-            "racismo", "intolerancia", "discriminacion", "exterminio", "genocidio",
-            "exclusion", "opresion", "dictador", "tortura", "secuestrar", "secuestrador",
-            "porno", "pornografia", "sexo", "sexual", "masturbacion", "orgasmo", "follar",
-            "penetracion", "coito", "masturbarse", "pechos", "tetas", "nalgas", "ejaculacion",
-            "porn", "fetiche", "pajearse",
-            "gratis", "dinero facil", "trabajo desde casa", "hazte rico", "oferta especial",
-            "gana dinero", "inversion segura", "click aqui", "suscribete", "visita",
-            "comprar ahora", "haz clic", "oferta", "promocion", "regalo", "premio",
-            "ganar", "ganancias", "multiplica tu dinero", "facil dinero",
-            "trabaja desde casa", "trabajo rapido", "oportunidad unica", "invierte ahora",
-            "dinero rapido", "comprar", "descarga gratis", "envio gratis", "promo", "oferton"
+            "idiota", "estupido", "imbecil", "pendejo", "pendeja", "tonto", "tonta", "gilipollas", "mierda", "puta", "puto", "puta madre", "coño", "joder", "cabron", "cabrón", "polla", "culo", "verga", "pinche", "chingar", "chingada", "chingón", "zorra", "maricón", "marica", "pedo", "mamón", "mamona", "culero", "culera", "cojones", "joto", "pajero", "pajera", "tarado", "tarada", "soplapollas", "puto amo", "cabrona", "culia", "culiado", "cagada", "cagón", "cagona", "mamonazo", "mamaguevo", "vergón", "verga", "chinga", "chinga tu madre", "puta que te pario", "puta madre", "perra", "perro", "maldito", "maldita", "mierdoso", "mierdosa", "estúpida", "pendejazo", "boludo", "boluda", "pelotudo", "pelotuda", "tarado mental", "idiotez", "imbecil mental", "lesbiana", "gay", "homosexual", "putamadre", "cabronazo", "chupapollas", "gonorrea", "culiarse", "gilipollas", "gilipollez", "mariconazo", "mamabicho", "bastardo", "sidoso", "sidosa", "chucha", "huevón", "huevona", "huevonazo", "chingado", "chingada madre", "pene", "vagina", "vulva", "chocho", "chochito", "mamada", "putazo", "putita", "pinche", "puteada", "chingue tu madre", "chinga tu madre", "fuck", "shit", "bitch", "asshole", "dick", "pussy", "cock", "cunt", "bastard", "damn", "crap", "bollocks", "bugger", "bloody", "arsehole", "wanker", "prick", "twat", "fucker", "motherfucker", "nigger", "nigga", "slut", "whore", "douche", "douchebag", "retard", "dumbass", "shithead", "moron", "loser", "idiot", "stupid", "jerk", "asswipe", "cockface", "fuckface", "dickhead", "dickweed", "asshat", "shitbag", "fuckboy", "shitface", "twatface", "bitchass", "dipshit", "shitfuck", "twatwaffle", "clusterfuck", "shitstorm", "jackass", "cumdumpster", "assclown", "shitshow", "terrorista", "racista", "homofobo", "misogino", "machista", "asesino", "asesina", "matar", "muerte", "violador", "violacion", "violento", "genocida", "terrorismo", "asesinato", "golpear", "golpeador", "golpista", "racismo", "intolerancia", "discriminacion", "exterminio", "genocidio", "exclusion", "opresion", "dictador", "tortura", "secuestrar", "secuestrador", "porno", "pornografia", "sexo", "sexual", "masturbacion", "orgasmo", "follar", "penetracion", "coito", "masturbarse", "pechos", "tetas", "nalgas", "ejaculacion", "porn", "fetiche", "pajearse", "gratis", "dinero facil", "trabajo desde casa", "hazte rico", "oferta especial", "gana dinero", "inversion segura", "click aqui", "suscribete", "visita", "comprar ahora", "haz clic", "oferta", "promocion", "regalo", "premio", "ganar", "ganancias", "multiplica tu dinero", "facil dinero", "trabaja desde casa", "trabajo rapido", "oportunidad unica", "invierte ahora", "dinero rapido", "comprar", "descarga gratis", "envio gratis", "promo", "oferton"
         )
 
         val lowerText = text.lowercase().trim()

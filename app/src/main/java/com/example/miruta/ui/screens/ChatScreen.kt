@@ -32,22 +32,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.miruta.R
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
 import com.example.miruta.ui.components.ErrorMessageCard
+import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.ui.viewmodel.AuthViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ChatScreen(routeName: String, repository: AuthRepository) {
+fun ChatScreen(routeName: String, repository: AuthRepository, navController: NavHostController) {
 
     val insets = WindowInsets.systemBars.asPaddingValues()
 
     val factory = AuthViewModelFactory(repository)
     val authViewModel: AuthViewModel = viewModel(factory = factory)
+
+    val isUserLoggedIn by authViewModel.isUserLoggedIn.collectAsState()
 
     val context = LocalContext.current
     val viewModel = viewModel<AuthViewModel>()
@@ -184,62 +189,78 @@ fun ChatScreen(routeName: String, repository: AuthRepository) {
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = message,
-                        onValueChange = { message = it },
-                        placeholder = {
+                if (isUserLoggedIn) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = message,
+                            onValueChange = { message = it },
+                            placeholder = { Text("Message") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = TextFieldDefaults.textFieldColors(
+                                backgroundColor = Color.White,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                if (message.isNotBlank()) {
+                                    authViewModel.sendMessage(routeName, message, senderName, context, onError = { errorMessage = it })
+                                    message = ""
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = Color(0xFF00933B),
+                                    shape = RoundedCornerShape(24.dp)
+                                )
+                                .padding(10.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_send),
+                                contentDescription = "Enviar",
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                navController.navigate(BottomNavScreen.Auth(isUserLoggedIn = false).route) {
+                                    popUpTo(BottomNavScreen.Auth(isUserLoggedIn = false).route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                        ) {
                             Text(
-                                "Message",
+                                text = "Log in to send messages",
+                                color = Color.White,
                                 style = TextStyle(
-                                    fontFamily = AppTypography.body1.fontFamily,
-                                    fontWeight = AppTypography.body1.fontWeight,
-                                    fontSize = 16.sp
+                                    fontFamily = AppTypography.h1.fontFamily,
+                                    fontWeight = AppTypography.h1.fontWeight,
+                                    fontSize = 20.sp
                                 )
                             )
-                        },
-                        textStyle = TextStyle(
-                            fontFamily = AppTypography.body1.fontFamily,
-                            fontWeight = AppTypography.body1.fontWeight,
-                            fontSize = 16.sp
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = TextFieldDefaults.textFieldColors(
-                            backgroundColor = Color(0xFFFFFFFF),
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            if (message.isNotBlank()) {
-                                viewModel.sendMessage(routeName, message, senderName, context, onError = { errorMessage = it })
-                                message = ""
-                            }
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = Color(0xFF00933B),
-                                shape = RoundedCornerShape(24.dp)
-                            )
-                            .padding(10.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_send),
-                            contentDescription = "Enviar",
-                            modifier = Modifier.size(34.dp)
-                        )
+                        }
                     }
                 }
 
