@@ -46,6 +46,11 @@ android {
 }
 
 dependencies {
+
+    //ExoPLayer
+    implementation ("androidx.media3:media3-exoplayer:1.3.1")
+    implementation ("androidx.media3:media3-ui:1.3.1")
+
     //Okhttp
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okio:okio:3.5.0")
@@ -81,6 +86,7 @@ dependencies {
     // Dagger Hilt para inyección de dependencias
     implementation("com.google.dagger:hilt-android:2.51.1")
     implementation(libs.litert.metadata)
+    implementation(libs.androidx.media3.ui.compose)
     kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     // Kotlin estándar
