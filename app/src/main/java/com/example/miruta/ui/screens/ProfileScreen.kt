@@ -34,22 +34,7 @@ import com.example.miruta.R
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
-private val avatarResources = listOf(
-    R.drawable.avatar_placeholder_1,
-    R.drawable.avatar_placeholder_2,
-    R.drawable.avatar_placeholder_3,
-    R.drawable.avatar_placeholder_4,
-    R.drawable.avatar_placeholder_5,
-    R.drawable.avatar_placeholder_6,
-    R.drawable.avatar_placeholder_7,
-    R.drawable.avatar_placeholder_8,
-    R.drawable.avatar_placeholder_9,
-    R.drawable.avatar_placeholder_10
-)
 
-private fun getAvatarResource(index: Int): Int {
-    return avatarResources.getOrElse(index % avatarResources.size) { R.drawable.avatar_placeholder_1 }
-}
 
 @Composable
 fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
@@ -76,7 +61,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                         .size(150.dp) // Cambiado de 100.dp a 150.dp
                         .clip(CircleShape)
                         .background(Color.LightGray)
-                        .clickable { showImagePopup = true }
                 ) {
                     Image(
                         painter = painterResource(id = selectedImage),
@@ -162,43 +146,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                     }
                 }
             }
-        }
-
-        // Popup de selección de imagen
-        if (showImagePopup) {
-            AlertDialog(
-                onDismissRequest = { showImagePopup = false },
-                text = {
-                    LazyColumn {
-                        items((0 until 10 step 4).toList()) { rowIndex ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                for (columnIndex in 0 until 4) {
-                                    val index = rowIndex + columnIndex
-                                    if (index < 10) {
-                                        val imgId = getAvatarResource(index)
-                                        Image(
-                                            painter = painterResource(id = imgId),
-                                            contentDescription = "Avatar $index",
-                                            modifier = Modifier
-                                                .size(60.dp)
-                                                .padding(4.dp)
-                                                .clip(CircleShape)
-                                                .clickable {
-                                                    selectedImage = imgId
-                                                    showImagePopup = false
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                buttons = {}
-            )
         }
     }
 }
