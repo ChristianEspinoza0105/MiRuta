@@ -1,0 +1,111 @@
+package com.example.miruta.ui.components
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.miruta.ui.theme.AppTypography
+
+@Composable
+fun ErrorMessageCard(
+    message: String,
+    reason: String,
+    onDismiss: () -> Unit,
+    durationMillis: Int = 5000
+) {
+    var visible by remember { mutableStateOf(true) }
+    var progress by remember { mutableStateOf(1f) }
+
+    LaunchedEffect(Unit) {
+        val animationDuration = durationMillis.toLong()
+        val startTime = withFrameNanos { it }
+        while (true) {
+            val elapsed = withFrameNanos { it } - startTime
+            progress = 1f - (elapsed.toFloat() / (animationDuration * 1_000_000))
+            if (progress <= 0f) {
+                visible = false
+                onDismiss()
+                break
+            }
+            kotlinx.coroutines.yield()
+        }
+    }
+
+    AnimatedVisibility(visible = visible) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEAEA)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Error",
+                        tint = Color(0xFFD32F2F),
+                        modifier = Modifier.size(40.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = message,
+                            style = AppTypography.body1.copy(
+                                fontSize = 18.sp,
+                                color = Color(0xFFD32F2F)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = reason,
+                            style = AppTypography.body1.copy(
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        )
+                    }
+
+                    IconButton(onClick = {
+                        visible = false
+                        onDismiss()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Cerrar"
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(4.dp)
+                        .background(Color(0xFFD32F2F))
+                )
+            }
+        }
+    }
+}

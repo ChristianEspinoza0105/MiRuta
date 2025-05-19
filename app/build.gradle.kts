@@ -47,6 +47,19 @@ android {
 
 dependencies {
 
+    //ExoPLayer
+    implementation ("androidx.media3:media3-exoplayer:1.3.1")
+    implementation ("androidx.media3:media3-ui:1.3.1")
+
+    //Okhttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okio:okio:3.5.0")
+
+    //TensorFlow
+    implementation ("org.tensorflow:tensorflow-lite:2.13.0")
+    implementation ("org.tensorflow:tensorflow-lite-support:0.4.2")
+    implementation ("org.tensorflow:tensorflow-lite-task-text:0.4.2")
+
     //OpenCSV
     implementation ("com.opencsv:opencsv:5.5.2")
 
@@ -72,6 +85,8 @@ dependencies {
 
     // Dagger Hilt para inyección de dependencias
     implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation(libs.litert.metadata)
+    implementation(libs.androidx.media3.ui.compose)
     kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     // Kotlin estándar
