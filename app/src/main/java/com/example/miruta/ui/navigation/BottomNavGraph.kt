@@ -35,6 +35,7 @@ fun BottomNavGraph(
 
     Box(modifier = Modifier) {
         NavHost(navController, startDestination = BottomNavScreen.Explore.route) {
+
             composable(BottomNavScreen.Explore.route) {
                 ExploreScreen()
             }
@@ -78,6 +79,7 @@ fun BottomNavGraph(
             composable("RegisterScreen") {
                 RegisterScreen(navController)
             }
+
             composable("LoginScreen") {
                 LoginScreen(navController)
             }
