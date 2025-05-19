@@ -14,6 +14,7 @@ constraintlayout = "2.2.1"
 places = "4.2.0"
 litertMetadata = "1.2.0"
 media3UiCompose = "1.7.1"
+composeTesting = "1.0.0-alpha04"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +37,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 places = { group = "com.google.android.libraries.places", name = "places", version.ref = "places" }
 litert-metadata = { group = "com.google.ai.edge.litert", name = "litert-metadata", version.ref = "litertMetadata" }
 androidx-media3-ui-compose = { group = "androidx.media3", name = "media3-ui-compose", version.ref = "media3UiCompose" }
+androidx-compose-testing = { group = "androidx.xr.compose", name = "compose-testing", version.ref = "composeTesting" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

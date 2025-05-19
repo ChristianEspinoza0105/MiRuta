@@ -42,7 +42,7 @@ fun BottomNavGraph(
             }
             composable("chat/{routeName}") { backStackEntry ->
                 val routeName = backStackEntry.arguments?.getString("routeName") ?: "Unknown"
-                ChatScreen(routeName = routeName, repository = authViewModel.authRepository, navController = navController)
+                ChatScreen(routeName = routeName, repository = authViewModel.authRepository, navController = navController, onBackClick = { navController.popBackStack() }, onCircleIconClick = {})
             }
 
             composable(BottomNavScreen.Lines.route) {

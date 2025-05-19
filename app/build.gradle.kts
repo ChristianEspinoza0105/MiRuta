@@ -87,6 +87,7 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.51.1")
     implementation(libs.litert.metadata)
     implementation(libs.androidx.media3.ui.compose)
+    implementation(libs.androidx.compose.testing)
     kapt("com.google.dagger:hilt-compiler:2.51.1")
 
     // Kotlin estándar
