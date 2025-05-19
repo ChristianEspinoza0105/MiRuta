@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.miruta.data.RutaClassifier
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -43,7 +45,10 @@ class AuthViewModel @Inject constructor(
     private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
         val user = auth.currentUser
         _isUserLoggedIn.value = user != null
-        Log.d("AuthViewModel", "Estado de usuario: ${if (_isUserLoggedIn.value) "Conectado" else "Desconectado"}")
+        Log.d(
+            "AuthViewModel",
+            "Estado de usuario: ${if (_isUserLoggedIn.value) "Conectado" else "Desconectado"}"
+        )
 
         if (user != null && _userData.value == null) {
             fetchUserData(user.uid)
@@ -70,9 +75,24 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
-    fun registerDriver(email: String, password: String, name: String, phone: String, route: String, plates: String) {
+
+    fun registerDriver(
+        email: String,
+        password: String,
+        name: String,
+        phone: String,
+        route: String,
+        plates: String
+    ) {
         viewModelScope.launch {
-            authRepository.registerDriver(email, password, name, phone, route, plates) { success, message ->
+            authRepository.registerDriver(
+                email,
+                password,
+                name,
+                phone,
+                route,
+                plates
+            ) { success, message ->
                 if (success) {
                     _registerState.value = "Registro exitoso"
                     fetchUserData(auth.currentUser?.uid ?: "")
@@ -135,52 +155,64 @@ class AuthViewModel @Inject constructor(
         auth.removeAuthStateListener(authStateListener)
     }
 
-    //Enviado de mensaje y guardado
     fun sendMessage(
         routeId: String,
-        messageText: String,
+        messageText: String?,
         senderName: String,
         context: Context,
+        location: LatLng? = null,
         onError: (String) -> Unit
     ) {
-        // Validación del mensaje (filtro de contenido)
-        when (val validation = isMessageAllowed(messageText)) {
-            is MessageValidationResult.Denied -> {
-                onError(validation.reason)
-                return
-            }
-            is MessageValidationResult.Allowed -> {
-                // continuar
-            }
-            else -> {
-                onError("Error desconocido en la validación del mensaje.")
-                return
-            }
-        }
-
-        // Clasificación semántica (verifica que el mensaje esté relacionado con rutas)
-        val clasificador = RutaClassifier(context)
-        if (!clasificador.esMensajeRelacionado(messageText)) {
-            onError("Tu mensaje no está relacionado con rutas.")
+        if (messageText == null && location == null) {
+            onError("El mensaje o la ubicación deben estar presentes")
             return
         }
 
-        // Verificación del usuario autenticado
+        if (messageText != null) {
+            when (val validation = isMessageAllowed(messageText)) {
+                is MessageValidationResult.Denied -> {
+                    onError(validation.reason)
+                    return
+                }
+                is MessageValidationResult.Allowed -> { }
+                else -> {
+                    onError("Error desconocido en la validación del mensaje.")
+                    return
+                }
+            }
+
+            val clasificador = RutaClassifier(context)
+            if (!clasificador.esMensajeRelacionado(messageText)) {
+                onError("Tu mensaje no está relacionado con rutas.")
+                return
+            }
+        }
+
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
             onError("Usuario no autenticado.")
             return
         }
 
-        // Estructura del mensaje a enviar
-        val message = mapOf(
-            "text" to messageText,
-            "senderId" to currentUser.uid,
-            "senderName" to senderName,
-            "timestamp" to FieldValue.serverTimestamp()
-        )
+        val message = if (location != null) {
+            mapOf(
+                "type" to "location",
+                "latitude" to location.latitude,
+                "longitude" to location.longitude,
+                "senderId" to currentUser.uid,
+                "senderName" to senderName,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+        } else {
+            mapOf(
+                "type" to "text",
+                "text" to messageText,
+                "senderId" to currentUser.uid,
+                "senderName" to senderName,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+        }
 
-        // Envío del mensaje a Firestore
         FirebaseFirestore.getInstance()
             .collection("chats")
             .document(routeId)
@@ -194,7 +226,237 @@ class AuthViewModel @Inject constructor(
     //Filtrado de mensajes (primera capa)
     private fun isMessageAllowed(text: String): MessageValidationResult {
         val forbiddenWords = listOf(
-            "idiota", "estupido", "imbecil", "pendejo", "pendeja", "tonto", "tonta", "gilipollas", "mierda", "puta", "puto", "puta madre", "coño", "joder", "cabron", "cabrón", "polla", "culo", "verga", "pinche", "chingar", "chingada", "chingón", "zorra", "maricón", "marica", "pedo", "mamón", "mamona", "culero", "culera", "cojones", "joto", "pajero", "pajera", "tarado", "tarada", "soplapollas", "puto amo", "cabrona", "culia", "culiado", "cagada", "cagón", "cagona", "mamonazo", "mamaguevo", "vergón", "verga", "chinga", "chinga tu madre", "puta que te pario", "puta madre", "perra", "perro", "maldito", "maldita", "mierdoso", "mierdosa", "estúpida", "pendejazo", "boludo", "boluda", "pelotudo", "pelotuda", "tarado mental", "idiotez", "imbecil mental", "lesbiana", "gay", "homosexual", "putamadre", "cabronazo", "chupapollas", "gonorrea", "culiarse", "gilipollas", "gilipollez", "mariconazo", "mamabicho", "bastardo", "sidoso", "sidosa", "chucha", "huevón", "huevona", "huevonazo", "chingado", "chingada madre", "pene", "vagina", "vulva", "chocho", "chochito", "mamada", "putazo", "putita", "pinche", "puteada", "chingue tu madre", "chinga tu madre", "fuck", "shit", "bitch", "asshole", "dick", "pussy", "cock", "cunt", "bastard", "damn", "crap", "bollocks", "bugger", "bloody", "arsehole", "wanker", "prick", "twat", "fucker", "motherfucker", "nigger", "nigga", "slut", "whore", "douche", "douchebag", "retard", "dumbass", "shithead", "moron", "loser", "idiot", "stupid", "jerk", "asswipe", "cockface", "fuckface", "dickhead", "dickweed", "asshat", "shitbag", "fuckboy", "shitface", "twatface", "bitchass", "dipshit", "shitfuck", "twatwaffle", "clusterfuck", "shitstorm", "jackass", "cumdumpster", "assclown", "shitshow", "terrorista", "racista", "homofobo", "misogino", "machista", "asesino", "asesina", "matar", "muerte", "violador", "violacion", "violento", "genocida", "terrorismo", "asesinato", "golpear", "golpeador", "golpista", "racismo", "intolerancia", "discriminacion", "exterminio", "genocidio", "exclusion", "opresion", "dictador", "tortura", "secuestrar", "secuestrador", "porno", "pornografia", "sexo", "sexual", "masturbacion", "orgasmo", "follar", "penetracion", "coito", "masturbarse", "pechos", "tetas", "nalgas", "ejaculacion", "porn", "fetiche", "pajearse", "gratis", "dinero facil", "trabajo desde casa", "hazte rico", "oferta especial", "gana dinero", "inversion segura", "click aqui", "suscribete", "visita", "comprar ahora", "haz clic", "oferta", "promocion", "regalo", "premio", "ganar", "ganancias", "multiplica tu dinero", "facil dinero", "trabaja desde casa", "trabajo rapido", "oportunidad unica", "invierte ahora", "dinero rapido", "comprar", "descarga gratis", "envio gratis", "promo", "oferton"
+            "idiota",
+            "estupido",
+            "imbecil",
+            "pendejo",
+            "pendeja",
+            "tonto",
+            "tonta",
+            "gilipollas",
+            "mierda",
+            "puta",
+            "puto",
+            "puta madre",
+            "coño",
+            "joder",
+            "cabron",
+            "cabrón",
+            "polla",
+            "culo",
+            "verga",
+            "pinche",
+            "chingar",
+            "chingada",
+            "chingón",
+            "zorra",
+            "maricón",
+            "marica",
+            "pedo",
+            "mamón",
+            "mamona",
+            "culero",
+            "culera",
+            "cojones",
+            "joto",
+            "pajero",
+            "pajera",
+            "tarado",
+            "tarada",
+            "soplapollas",
+            "puto amo",
+            "cabrona",
+            "culia",
+            "culiado",
+            "cagada",
+            "cagón",
+            "cagona",
+            "mamonazo",
+            "mamaguevo",
+            "vergón",
+            "verga",
+            "chinga",
+            "chinga tu madre",
+            "puta que te pario",
+            "puta madre",
+            "perra",
+            "perro",
+            "maldito",
+            "maldita",
+            "mierdoso",
+            "mierdosa",
+            "estúpida",
+            "pendejazo",
+            "boludo",
+            "boluda",
+            "pelotudo",
+            "pelotuda",
+            "tarado mental",
+            "idiotez",
+            "imbecil mental",
+            "lesbiana",
+            "gay",
+            "homosexual",
+            "putamadre",
+            "cabronazo",
+            "chupapollas",
+            "gonorrea",
+            "culiarse",
+            "gilipollas",
+            "gilipollez",
+            "mariconazo",
+            "mamabicho",
+            "bastardo",
+            "sidoso",
+            "sidosa",
+            "chucha",
+            "huevón",
+            "huevona",
+            "huevonazo",
+            "chingado",
+            "chingada madre",
+            "pene",
+            "vagina",
+            "vulva",
+            "chocho",
+            "chochito",
+            "mamada",
+            "putazo",
+            "putita",
+            "pinche",
+            "puteada",
+            "chingue tu madre",
+            "chinga tu madre",
+            "fuck",
+            "shit",
+            "bitch",
+            "asshole",
+            "dick",
+            "pussy",
+            "cock",
+            "cunt",
+            "bastard",
+            "damn",
+            "crap",
+            "bollocks",
+            "bugger",
+            "bloody",
+            "arsehole",
+            "wanker",
+            "prick",
+            "twat",
+            "fucker",
+            "motherfucker",
+            "nigger",
+            "nigga",
+            "slut",
+            "whore",
+            "douche",
+            "douchebag",
+            "retard",
+            "dumbass",
+            "shithead",
+            "moron",
+            "loser",
+            "idiot",
+            "stupid",
+            "jerk",
+            "asswipe",
+            "cockface",
+            "fuckface",
+            "dickhead",
+            "dickweed",
+            "asshat",
+            "shitbag",
+            "fuckboy",
+            "shitface",
+            "twatface",
+            "bitchass",
+            "dipshit",
+            "shitfuck",
+            "twatwaffle",
+            "clusterfuck",
+            "shitstorm",
+            "jackass",
+            "cumdumpster",
+            "assclown",
+            "shitshow",
+            "terrorista",
+            "racista",
+            "homofobo",
+            "misogino",
+            "machista",
+            "asesino",
+            "asesina",
+            "matar",
+            "muerte",
+            "violador",
+            "violacion",
+            "violento",
+            "genocida",
+            "terrorismo",
+            "asesinato",
+            "golpear",
+            "golpeador",
+            "golpista",
+            "racismo",
+            "intolerancia",
+            "discriminacion",
+            "exterminio",
+            "genocidio",
+            "exclusion",
+            "opresion",
+            "dictador",
+            "tortura",
+            "secuestrar",
+            "secuestrador",
+            "porno",
+            "pornografia",
+            "sexo",
+            "sexual",
+            "masturbacion",
+            "orgasmo",
+            "follar",
+            "penetracion",
+            "coito",
+            "masturbarse",
+            "pechos",
+            "tetas",
+            "nalgas",
+            "ejaculacion",
+            "porn",
+            "fetiche",
+            "pajearse",
+            "gratis",
+            "dinero facil",
+            "trabajo desde casa",
+            "hazte rico",
+            "oferta especial",
+            "gana dinero",
+            "inversion segura",
+            "click aqui",
+            "suscribete",
+            "visita",
+            "comprar ahora",
+            "haz clic",
+            "oferta",
+            "promocion",
+            "regalo",
+            "premio",
+            "ganar",
+            "ganancias",
+            "multiplica tu dinero",
+            "facil dinero",
+            "trabaja desde casa",
+            "trabajo rapido",
+            "oportunidad unica",
+            "invierte ahora",
+            "dinero rapido",
+            "comprar",
+            "descarga gratis",
+            "envio gratis",
+            "promo",
+            "oferton"
         )
 
         val lowerText = text.lowercase().trim()
@@ -264,8 +526,8 @@ class AuthViewModel @Inject constructor(
                 onMessagesChanged(msgs)
             }
     }
-}
 
+}
 
 class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
