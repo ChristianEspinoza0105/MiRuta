@@ -20,6 +20,7 @@ import com.example.miruta.ui.screens.MapScreen
 import com.example.miruta.ui.screens.MyRouteScreen
 import com.example.miruta.ui.screens.LoginScreen
 import com.example.miruta.ui.screens.ProfileScreen
+import com.example.miruta.ui.screens.SelectImageScreen
 import com.example.miruta.ui.screens.RegisterDriverScreen
 import com.example.miruta.ui.screens.RegisterScreen
 import com.example.miruta.ui.viewmodel.AuthViewModel
@@ -54,6 +55,10 @@ fun BottomNavGraph(
 
             composable("EditProfileScreen") {
                 EditProfileScreen(navController)
+            }
+
+            composable("SelectImageScreen") {
+                SelectImageScreen(navController)
             }
 
             composable(

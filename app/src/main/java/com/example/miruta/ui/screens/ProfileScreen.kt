@@ -23,14 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
@@ -76,7 +73,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
             ) {
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(150.dp) // Cambiado de 100.dp a 150.dp
                         .clip(CircleShape)
                         .background(Color.LightGray)
                         .clickable { showImagePopup = true }
@@ -93,9 +90,10 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 
                 Text(
                     text = "User",
-                    fontSize = 20.sp,
+                    fontSize = 28.sp, // Cambiado de 20.sp a 28.sp
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = AppTypography.h1.fontFamily,
+                    fontWeight = AppTypography.h1.fontWeight,
                     textAlign = TextAlign.Center
                 )
             }
@@ -111,7 +109,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.90f) // 20% más corta que la tarjeta blanca
+                        .fillMaxHeight(0.90f)
                         .align(Alignment.BottomCenter)
                         .background(Color(0xFFE0E0E0), shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
                 ) {  }
@@ -127,10 +125,9 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                     // Opción: Edit profile
                     ProfileOption(
                         icon = Icons.Default.Edit,
-                        iconColor = Color(0xFFFFC107), // Amarillo
+                        iconColor = Color(0xFFFFC107),
                         text = "Edit profile",
                         textColor = Color.Black
-
                     ) {
                         navController.navigate("EditProfileScreen") {
                             popUpTo("EditProfileScreen") { inclusive = true }
@@ -142,7 +139,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                     // Opción: Notifications
                     ProfileOption(
                         icon = Icons.Default.Notifications,
-                        iconColor = Color(0xFFFFC107), // Amarillo
+                        iconColor = Color(0xFFFFC107),
                         text = "Notifications",
                         textColor = Color.Black
                     ) {
@@ -173,14 +170,14 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                 onDismissRequest = { showImagePopup = false },
                 text = {
                     LazyColumn {
-                        items((0 until 20 step 4).toList()) { rowIndex ->
+                        items((0 until 10 step 4).toList()) { rowIndex ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 for (columnIndex in 0 until 4) {
                                     val index = rowIndex + columnIndex
-                                    if (index < 20) {
+                                    if (index < 10) {
                                         val imgId = getAvatarResource(index)
                                         Image(
                                             painter = painterResource(id = imgId),
@@ -206,7 +203,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
     }
 }
 
-
 @Composable
 fun ProfileOption(
     icon: ImageVector,
@@ -226,13 +222,15 @@ fun ProfileOption(
             imageVector = icon,
             contentDescription = null,
             tint = iconColor,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp) // Cambiado de 24.dp a 32.dp
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            fontSize = 16.sp,
-            color = textColor
+            fontSize = 20.sp, // Cambiado de 16.sp a 20.sp
+            color = textColor,
+            fontFamily = AppTypography.body1.fontFamily,
+            fontWeight = AppTypography.body1.fontWeight,
         )
     }
 }
