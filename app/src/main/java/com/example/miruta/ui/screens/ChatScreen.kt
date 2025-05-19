@@ -52,7 +52,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.tasks.await
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
@@ -60,6 +59,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextDecoration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -384,11 +388,11 @@ fun ChatScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color(0xFF121212))
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
+                                .background(Color.White)
+                                .padding(32.dp)
                         ) {
                             Column(
+                                modifier = Modifier.align(Alignment.Center),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(24.dp)
                             ) {
@@ -396,13 +400,20 @@ fun ChatScreen(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = "Authentication Required",
                                     tint = Color(0xFF00933B),
-                                    modifier = Modifier.size(64.dp)
+                                    modifier = Modifier.size(80.dp)
                                 )
 
                                 Text(
-                                    text = "Log in to chat with other users",
-                                    style = AppTypography.h1.copy(fontSize = 20.sp),
-                                    color = Color.White,
+                                    text = "Your route. Your community.",
+                                    style = AppTypography.h1.copy(fontSize = 24.sp),
+                                    color = Color.Black,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Text(
+                                    text = "Log in to access routes, chat with other passengers, and get real-time updates.",
+                                    style = AppTypography.body1.copy(fontSize = 18.sp),
+                                    color = Color.Gray,
                                     textAlign = TextAlign.Center
                                 )
 
@@ -421,19 +432,46 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .height(56.dp)
                                         .widthIn(min = 200.dp)
-                                        .shadow(8.dp, shape = RoundedCornerShape(50))
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
                                     Text(
                                         text = "Sign in",
-                                        style = AppTypography.h1.copy(fontSize = 18.sp)
+                                        style = AppTypography.h1.copy(fontSize = 24.sp)
                                     )
                                 }
                             }
+
+                            val annotatedText = buildAnnotatedString {
+                                append("Don't have an account yet? ")
+                                pushStringAnnotation(tag = "CREATE_ACCOUNT", annotation = "create_account")
+                                withStyle(
+                                    style = SpanStyle(
+                                        color = Color(0xFF00933B),
+                                        fontWeight = FontWeight.Bold,
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                ) {
+                                    append("Create one now")
+                                }
+                                pop()
+                                append(" and join the community!")
+                            }
+
+                            ClickableText(
+                                text = annotatedText,
+                                style = AppTypography.body2.copy(fontSize = 14.sp, color = Color.Black, textAlign = TextAlign.Center),
+                                onClick = { offset ->
+                                    annotatedText.getStringAnnotations(tag = "CREATE_ACCOUNT", start = offset, end = offset)
+                                        .firstOrNull()?.let {
+                                            navController.navigate("RegisterScreen") {
+                                                popUpTo("RegisterScreen") { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                            )
                         }
                     }
 
