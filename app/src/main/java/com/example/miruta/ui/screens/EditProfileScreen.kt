@@ -81,7 +81,7 @@ fun EditProfileScreen(navController: NavController) {
                         .size(150.dp) // Cambiado de 100.dp a 150.dp
                         .clip(CircleShape)
                         .background(Color.LightGray)
-                        .clickable { showImagePopup = true }
+                        .clickable { navController.navigate("SelectImageScreen") }
                 ) {
                     Image(
                         painter = painterResource(id = selectedImage),
