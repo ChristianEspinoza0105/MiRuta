@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -360,60 +361,103 @@ fun ChatScreen(
                     }
                 }
 
-                ModalBottomSheet(
-                    onDismissRequest = { showLocationSheet.value = false },
-                    sheetState = sheetState
-                ) {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .padding(20.dp)
+                    ModalBottomSheet(
+                        onDismissRequest = { showLocationSheet.value = false },
+                        sheetState = sheetState,
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        tonalElevation = 8.dp
                     ) {
-                        Text("Send location", style = AppTypography.h1, fontSize = 30.sp)
-                        Spacer(Modifier.height(8.dp))
-
-                        if (userLoc != null) {
-                            GoogleMap(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(16.dp)),
-                                cameraPositionState = cameraState
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Marker(
-                                    state = MarkerState(position = userLoc!!),
-                                    title = "Tu ubicación"
-                                )
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Button(
-                                onClick = {
-                                    userLoc?.let { loc ->
-                                        viewModel.sendMessage(
-                                            routeName,
-                                            messageText = null,
-                                            senderName = senderName,
-                                            context = context,
-                                            location = loc,
-                                            onError = { errorMessage = it }
+                                Box(
+                                    modifier = Modifier
+                                        .border(
+                                            width = 4.dp,
+                                            color = Color(0xFF00933B),
+                                            shape = RoundedCornerShape(12.dp)
                                         )
-                                        showLocationSheet.value = false
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
-                            ) {
-                                Text("Send your curret location", color = Color.White, style = AppTypography.h2, fontSize = 20.sp)
+                                        .size(44.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_app),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(35.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = "Send location",
+                                    style = AppTypography.h1,
+                                    fontSize = 22.sp,
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
                             }
-                        } else {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (userLoc != null) {
+                                GoogleMap(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp)
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    cameraPositionState = cameraState
+                                ) {
+                                    Marker(
+                                        state = MarkerState(position = userLoc!!),
+                                        title = "Tu ubicación"
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = {
+                                        userLoc?.let { loc ->
+                                            viewModel.sendMessage(
+                                                routeName,
+                                                messageText = null,
+                                                senderName = senderName,
+                                                context = context,
+                                                location = loc,
+                                                onError = { errorMessage = it }
+                                            )
+                                            showLocationSheet.value = false
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(30.dp),
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                                ) {
+                                    Text(
+                                        "Send your current location",
+                                        color = Color.White,
+                                        style = AppTypography.h2,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
                                 }
                             }
                         }
