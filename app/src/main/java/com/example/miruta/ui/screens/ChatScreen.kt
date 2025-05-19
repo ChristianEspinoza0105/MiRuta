@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -49,14 +51,24 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.tasks.await
-
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     routeName: String,
     repository: AuthRepository,
-    navController: NavHostController
+    navController: NavHostController,
+    onBackClick: () -> Unit,
+    onCircleIconClick: () -> Unit
 ) {
     val factory = AuthViewModelFactory(repository)
     val viewModel: AuthViewModel = viewModel(factory = factory)
@@ -75,6 +87,11 @@ fun ChatScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val showLocationSheet = remember { mutableStateOf(false) }
 
+    val density = LocalDensity.current
+    val statusBarHeightPx = WindowInsets.statusBars.getTop(density)
+
+    val statusBarHeightDp = with(density) { statusBarHeightPx.toDp() }
+
     var isLoading by remember { mutableStateOf(true) }
 
     var hasLocationPermission by remember {
@@ -90,9 +107,14 @@ fun ChatScreen(
         hasLocationPermission = granted
     }
 
-    LaunchedEffect(routeName) {
-        viewModel.listenToMessages(routeName) { newMessages ->
-            messages = newMessages
+    LaunchedEffect(routeName, isUserLoggedIn) {
+        if (isUserLoggedIn) {
+            viewModel.listenToMessages(routeName) { newMessages ->
+                messages = newMessages
+                isLoading = false
+            }
+        } else {
+            messages = emptyList()
             isLoading = false
         }
     }
@@ -114,221 +136,309 @@ fun ChatScreen(
         }
     } else {
         Scaffold(
-        scaffoldState = scaffoldState,
-        backgroundColor = Color.Transparent
-    ) { paddingValues ->
+            scaffoldState = scaffoldState,
+            backgroundColor = Color.Transparent
+        ) { paddingValues ->
 
-        Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize()) {
 
-            Image(
-                painter = painterResource(id = R.drawable.background_chat),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
+                Image(
+                    painter = painterResource(id = R.drawable.background_chat),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize()
+                )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
+                Column(
                     modifier = Modifier
-                        .wrapContentSize()
-                        .padding(horizontal = 16.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF00933B))
-                        .height(56.dp),
-                    contentAlignment = Alignment.CenterStart
+                        .fillMaxSize()
+                        .padding(paddingValues)
                 ) {
-                    Text(
-                        text = routeName,
-                        color = Color.White,
-                        style = AppTypography.h2.copy(fontSize = 34.sp),
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    reverseLayout = true
-                ) {
-                    items(messages.reversed()) { msg ->
-                        val formattedTime = msg.timestamp?.toDate()?.let {
-                            java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(it)
-                        } ?: ""
-
-                        val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
+                    if (isUserLoggedIn) {
 
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
+                                .height(50.dp + statusBarHeightDp)
+                                .background(
+                                    color = Color(0xFF00933B),
+                                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+                                )
+                                .padding(
+                                    start = 10.dp,
+                                    end = 10.dp,
+                                    top = statusBarHeightDp,
+                                    bottom = 10.dp
+                                )
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .widthIn(max = 280.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        if (isOwnMessage) Color(0xFF00933B) else Color(0xFFCFE9DA)
-                                    )
-                                    .padding(14.dp)
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                if (msg.type == "location") {
-                                    val lat = msg.latitude ?: 0.0
-                                    val lon = msg.longitude ?: 0.0
-
-                                    val mapIntent = {
-                                        val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
-                                        val intent = Intent(Intent.ACTION_VIEW, uri)
-                                        intent.setPackage("com.google.android.apps.maps")
-                                        context.startActivity(intent)
-                                    }
-
-                                    Text(
-                                        text = "📍 Ubicación ",
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isOwnMessage) Color.White else Color.Black,
-                                        modifier = Modifier.clickable {
-                                            mapIntent()
-                                        }
-                                    )
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    val staticMapUrl =
-                                        "https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=15&size=600x300&markers=color:red%7C${lat},${lon}&key=AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY"
-
+                                IconButton(
+                                    onClick = onBackClick,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
                                     Image(
-                                        painter = rememberAsyncImagePainter(staticMapUrl),
-                                        contentDescription = "Mapa estático",
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(150.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable {
-                                                mapIntent()
-                                            },
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Text(
-                                        text = msg.text,
-                                        color = if (isOwnMessage) Color.White else Color.Black
+                                        painter = painterResource(id = R.drawable.ic_back),
+                                        contentDescription = "Regresar",
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(Color.White)
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = formattedTime,
-                                    style = AppTypography.body1.copy(
-                                        fontSize = 10.sp,
-                                        color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray
-                                    ),
-                                    modifier = Modifier.align(Alignment.End)
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White)
+                                            .clickable { onCircleIconClick() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.ic_busline),
+                                            contentDescription = "Acción",
+                                            modifier = Modifier.size(35.dp),
+                                            colorFilter = ColorFilter.tint(Color(0xFF00933B))
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Text(
+                                        text = routeName,
+                                        color = Color.White,
+                                        style = AppTypography.h2.copy(
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 1.sp
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            reverseLayout = true
+                        ) {
+                            items(messages.reversed()) { msg ->
+                                val formattedTime = msg.timestamp?.toDate()?.let {
+                                    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(it)
+                                } ?: ""
+
+                                val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .widthIn(max = 280.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(
+                                                if (isOwnMessage) Color(0xFF00933B) else Color(0xFFCFE9DA)
+                                            )
+                                            .padding(14.dp)
+                                    ) {
+                                        if (msg.type == "location") {
+                                            val lat = msg.latitude ?: 0.0
+                                            val lon = msg.longitude ?: 0.0
+
+                                            val mapIntent = {
+                                                val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                intent.setPackage("com.google.android.apps.maps")
+                                                context.startActivity(intent)
+                                            }
+
+                                            Text(
+                                                text = "📍 Ubicación ",
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isOwnMessage) Color.White else Color.Black,
+                                                modifier = Modifier.clickable {
+                                                    mapIntent()
+                                                }
+                                            )
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            val staticMapUrl =
+                                                "https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=15&size=600x300&markers=color:red%7C${lat},${lon}&key=AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY"
+
+                                            Image(
+                                                painter = rememberAsyncImagePainter(staticMapUrl),
+                                                contentDescription = "Mapa estático",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(150.dp)
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        mapIntent()
+                                                    },
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Text(
+                                                text = msg.text,
+                                                color = if (isOwnMessage) Color.White else Color.Black
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Text(
+                                            text = formattedTime,
+                                            style = AppTypography.body1.copy(
+                                                fontSize = 10.sp,
+                                                color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray
+                                            ),
+                                            modifier = Modifier.align(Alignment.End)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextField(
+                                value = message,
+                                onValueChange = { message = it },
+                                placeholder = { Text("Message") },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        showLocationSheet.value = true
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_app),
+                                            contentDescription = "Ubicación"
+                                        )
+                                    }
+                                },
+                                colors = TextFieldDefaults.textFieldColors(
+                                    backgroundColor = Color.White,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(
+                                onClick = {
+                                    if (message.isNotBlank()) {
+                                        viewModel.sendMessage(
+                                            routeName,
+                                            message,
+                                            senderName,
+                                            context,
+                                            onError = { errorMessage = it }
+                                        )
+                                        message = ""
+                                    }
+                                },
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        color = Color(0xFF00933B),
+                                        shape = RoundedCornerShape(24.dp)
+                                    )
+                                    .padding(10.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_send),
+                                    contentDescription = "Enviar",
+                                    modifier = Modifier.size(34.dp)
                                 )
                             }
                         }
-                    }
-                }
-
-                if (isUserLoggedIn) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextField(
-                            value = message,
-                            onValueChange = { message = it },
-                            placeholder = { Text("Message") },
+                    } else {
+                        Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    showLocationSheet.value = true
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_app),
-                                        contentDescription = "Ubicación"
-                                    )
-                                }
-                            },
-                            colors = TextFieldDefaults.textFieldColors(
-                                backgroundColor = Color.White,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (message.isNotBlank()) {
-                                    viewModel.sendMessage(
-                                        routeName,
-                                        message,
-                                        senderName,
-                                        context,
-                                        onError = { errorMessage = it }
-                                    )
-                                    message = ""
-                                }
-                            },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    color = Color(0xFF00933B),
-                                    shape = RoundedCornerShape(24.dp)
+                                .fillMaxSize()
+                                .background(Color(0xFF121212))
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "Authentication Required",
+                                    tint = Color(0xFF00933B),
+                                    modifier = Modifier.size(64.dp)
                                 )
-                                .padding(10.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_send),
-                                contentDescription = "Enviar",
-                                modifier = Modifier.size(34.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Button(
-                            onClick = {
-                                navController.navigate(BottomNavScreen.Auth(false).route) {
-                                    popUpTo(BottomNavScreen.Auth(false).route) { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            },
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
-                        ) {
-                            Text(
-                                text = "Log in to send messages",
-                                color = Color.White,
-                                style = AppTypography.h1.copy(fontSize = 20.sp)
-                            )
-                        }
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                                Text(
+                                    text = "Log in to chat with other users",
+                                    style = AppTypography.h1.copy(fontSize = 20.sp),
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Button(
+                                    onClick = {
+                                        navController.navigate(BottomNavScreen.Auth(false).route) {
+                                            popUpTo(BottomNavScreen.Auth(false).route) { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(50),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF00933B),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .height(56.dp)
+                                        .widthIn(min = 200.dp)
+                                        .shadow(8.dp, shape = RoundedCornerShape(50))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                    Text(
+                                        text = "Sign in",
+                                        style = AppTypography.h1.copy(fontSize = 18.sp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
             errorMessage?.let {
                 Column(
