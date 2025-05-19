@@ -208,9 +208,9 @@ fun ChatScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Image(
-                                            painter = painterResource(id = R.drawable.ic_busline),
+                                            painter = painterResource(id = R.drawable.ic_chat),
                                             contentDescription = "Acción",
-                                            modifier = Modifier.size(35.dp),
+                                            modifier = Modifier.size(30.dp),
                                             colorFilter = ColorFilter.tint(Color(0xFF00933B))
                                         )
                                     }
@@ -343,7 +343,8 @@ fun ChatScreen(
                                         showLocationSheet.value = true
                                     }) {
                                         Icon(
-                                            painter = painterResource(id = R.drawable.ic_app),
+                                            modifier = Modifier.size(20.dp),
+                                            painter = painterResource(id = R.drawable.ic_share),
                                             contentDescription = "Ubicación"
                                         )
                                     }
@@ -438,6 +439,20 @@ fun ChatScreen(
                                         style = AppTypography.h1.copy(fontSize = 24.sp)
                                     )
                                 }
+
+                                Text(
+                                    text = "Back to explore more!",
+                                    style = AppTypography.body1.copy(fontSize = 16.sp),
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .clickable {
+                                            navController.navigate(BottomNavScreen.Community.route) {
+                                                popUpTo(BottomNavScreen.Community.route) { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                )
                             }
 
                             val annotatedText = buildAnnotatedString {
@@ -535,9 +550,9 @@ fun ChatScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Image(
-                                        painter = painterResource(id = R.drawable.ic_app),
+                                        painter = painterResource(id = R.drawable.ic_share),
                                         contentDescription = null,
-                                        modifier = Modifier.size(35.dp)
+                                        modifier = Modifier.size(32.dp)
                                     )
                                 }
 
@@ -605,7 +620,7 @@ fun ChatScreen(
                                         .height(220.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator()
+                                    LoadingSpinner(isLoading = true)
                                 }
                             }
                         }
