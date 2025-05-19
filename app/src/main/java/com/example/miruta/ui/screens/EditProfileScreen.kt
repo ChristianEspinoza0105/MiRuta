@@ -261,7 +261,7 @@ fun EditProfileScreen(navController: NavController) {
                                 style = TextStyle(
                                     fontFamily = AppTypography.button.fontFamily,
                                     fontWeight = AppTypography.button.fontWeight,
-                                    fontSize = 20.sp // Cambiado de 18.sp a 20.sp
+                                    fontSize = 24.sp
                                 ),
                                 color = Color.White
                             )

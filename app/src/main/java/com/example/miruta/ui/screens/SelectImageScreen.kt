@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
@@ -22,11 +23,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.theme.AppTypography
 
 @Composable
 fun SelectImageScreen(navController: NavController) {
@@ -36,11 +39,7 @@ fun SelectImageScreen(navController: NavController) {
         R.drawable.avatar_placeholder_3,
         R.drawable.avatar_placeholder_4,
         R.drawable.avatar_placeholder_5,
-        R.drawable.avatar_placeholder_6,
-        R.drawable.avatar_placeholder_7,
-        R.drawable.avatar_placeholder_8,
-        R.drawable.avatar_placeholder_9,
-        R.drawable.avatar_placeholder_10
+        R.drawable.avatar_placeholder_6
     )
 
     var selectedAvatar by remember { mutableStateOf(avatars[0]) }
@@ -71,12 +70,12 @@ fun SelectImageScreen(navController: NavController) {
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(64.dp))
 
         // Imagen seleccionada (previsualización)
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(190.dp)
                 .align(Alignment.CenterHorizontally)
                 .clip(CircleShape)
                 .background(Color(0xFFC8E6C9))
@@ -101,12 +100,11 @@ fun SelectImageScreen(navController: NavController) {
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.weight(1f)
         ) {
             items(avatars) { avatar ->
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        //.size(80.dp)
                         .clip(CircleShape)
                         .clickable { selectedAvatar = avatar }
                         .border(
@@ -120,24 +118,35 @@ fun SelectImageScreen(navController: NavController) {
                         painter = painterResource(id = avatar),
                         contentDescription = "Avatar",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(36.dp))
 
-        // Botón Save - Ya estaba centrado porque usa fillMaxWidth()
-        Button(
+        androidx.compose.material3.Button(
             onClick = { navController.popBackStack() },
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF4CAF50)),
             modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .align(Alignment.CenterHorizontally) // Esto asegura que esté centrado
+                .width(300.dp)
+                .height(60.dp)
+                .align(alignment = Alignment.CenterHorizontally),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF00933B)
+            ),
+            shape = RoundedCornerShape(20.dp)
+
         ) {
-            Text("Save", color = Color.White, fontSize = 16.sp)
+            androidx.compose.material3.Text(
+                "Save",
+                style = TextStyle(
+                    fontFamily = AppTypography.button.fontFamily,
+                    fontWeight = AppTypography.button.fontWeight,
+                    fontSize = 24.sp
+                ),
+                color = Color.White
+            )
         }
     }
 }
