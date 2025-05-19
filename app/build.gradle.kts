@@ -46,7 +46,6 @@ android {
 }
 
 dependencies {
-
     //ExoPLayer
     implementation ("androidx.media3:media3-exoplayer:1.3.1")
     implementation ("androidx.media3:media3-ui:1.3.1")
@@ -64,6 +63,7 @@ dependencies {
     implementation ("com.opencsv:opencsv:5.5.2")
 
     //Maps
+    implementation("io.coil-kt:coil-compose:2.4.0")
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
     implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation ("com.google.android.gms:play-services-base:18.2.0")

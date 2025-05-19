@@ -28,20 +28,6 @@ class AuthRepository @Inject constructor(
             }
     }
 
-    private fun fetchUserData(uid: String, onResult: (Boolean, String?) -> Unit) {
-        firestore.collection("users").document(uid).get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    onResult(true, null)
-                } else {
-                    onResult(false, "Usuario no encontrado en Firestore")
-                }
-            }
-            .addOnFailureListener {
-                onResult(false, it.message)
-            }
-    }
-
     fun registerUser(
         email: String,
         password: String,
@@ -64,10 +50,6 @@ class AuthRepository @Inject constructor(
                         "role" to "user",
                         "createdAt" to FieldValue.serverTimestamp(),
                         "profilePictureUrl" to "",
-                        "location" to hashMapOf(
-                            "latitude" to 0.0,
-                            "longitude" to 0.0
-                        ),
                         "favorites" to emptyList<String>()
                     )
 
@@ -112,10 +94,6 @@ class AuthRepository @Inject constructor(
                         "role" to "driver",
                         "createdAt" to FieldValue.serverTimestamp(),
                         "profilePictureUrl" to "",
-                        "location" to hashMapOf(
-                            "latitude" to 0.0,
-                            "longitude" to 0.0
-                        )
                     )
 
                     firestore.collection("drivers").document(uid)

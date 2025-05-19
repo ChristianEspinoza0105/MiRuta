@@ -1,87 +1,124 @@
 package com.example.miruta.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
 import com.example.miruta.R
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
 import com.example.miruta.ui.components.ErrorMessageCard
+import com.example.miruta.ui.components.LoadingSpinner
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.ui.viewmodel.AuthViewModelFactory
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
+import com.google.maps.android.compose.*
+import kotlinx.coroutines.tasks.await
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(routeName: String, repository: AuthRepository, navController: NavHostController) {
-
-    val insets = WindowInsets.systemBars.asPaddingValues()
-
+fun ChatScreen(
+    routeName: String,
+    repository: AuthRepository,
+    navController: NavHostController
+) {
     val factory = AuthViewModelFactory(repository)
-    val authViewModel: AuthViewModel = viewModel(factory = factory)
+    val viewModel: AuthViewModel = viewModel(factory = factory)
 
-    val isUserLoggedIn by authViewModel.isUserLoggedIn.collectAsState()
-
-    val context = LocalContext.current
-    val viewModel = viewModel<AuthViewModel>()
-
+    val isUserLoggedIn by viewModel.isUserLoggedIn.collectAsState()
     val userData by viewModel.userData.collectAsState()
     val senderName = userData?.get("name")?.toString() ?: "Anónimo"
 
     var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
     var message by remember { mutableStateOf("") }
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val scaffoldState = rememberScaffoldState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val showLocationSheet = remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(true) }
+
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ActivityCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasLocationPermission = granted
+    }
 
     LaunchedEffect(routeName) {
         viewModel.listenToMessages(routeName) { newMessages ->
             messages = newMessages
+            isLoading = false
         }
     }
 
-    val scaffoldState = rememberScaffoldState()
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
 
-    Scaffold(
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            LoadingSpinner(isLoading = true)
+        }
+    } else {
+        Scaffold(
         scaffoldState = scaffoldState,
         backgroundColor = Color.Transparent
     ) { paddingValues ->
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
                 painter = painterResource(id = R.drawable.background_chat),
@@ -96,6 +133,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                     .padding(paddingValues)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Box(
                     modifier = Modifier
                         .wrapContentSize()
@@ -105,21 +143,12 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                         .height(56.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = routeName,
-                            color = Color.White,
-                            style = TextStyle(
-                                fontFamily = AppTypography.h2.fontFamily,
-                                fontWeight = AppTypography.h2.fontWeight,
-                                fontSize = 34.sp
-                            ),
-                        )
-                    }
+                    Text(
+                        text = routeName,
+                        color = Color.White,
+                        style = AppTypography.h2.copy(fontSize = 34.sp),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -135,7 +164,9 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                         val formattedTime = msg.timestamp?.toDate()?.let {
                             java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(it)
                         } ?: ""
+
                         val isOwnMessage = msg.senderId == FirebaseAuth.getInstance().currentUser?.uid
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -151,36 +182,56 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                                     )
                                     .padding(14.dp)
                             ) {
+                                if (msg.type == "location") {
+                                    val lat = msg.latitude ?: 0.0
+                                    val lon = msg.longitude ?: 0.0
 
-                                if (!isOwnMessage) {
+                                    val mapIntent = {
+                                        val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                                        intent.setPackage("com.google.android.apps.maps")
+                                        context.startActivity(intent)
+                                    }
+
                                     Text(
-                                        text = msg.senderName,
-                                        fontSize = 12.sp,
-                                        color = Color.Gray,
-                                        style = TextStyle(
-                                            fontFamily = AppTypography.body1.fontFamily,
-                                            fontWeight = FontWeight.Normal
-                                        ),
-                                        modifier = Modifier.padding(bottom = 4.dp)
+                                        text = "📍 Ubicación ",
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isOwnMessage) Color.White else Color.Black,
+                                        modifier = Modifier.clickable {
+                                            mapIntent()
+                                        }
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    val staticMapUrl =
+                                        "https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=15&size=600x300&markers=color:red%7C${lat},${lon}&key=AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY"
+
+                                    Image(
+                                        painter = rememberAsyncImagePainter(staticMapUrl),
+                                        contentDescription = "Mapa estático",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(150.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                mapIntent()
+                                            },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Text(
+                                        text = msg.text,
+                                        color = if (isOwnMessage) Color.White else Color.Black
                                     )
                                 }
-                                Text(
-                                    text = msg.text,
-                                    style = TextStyle(
-                                        fontFamily = AppTypography.body1.fontFamily,
-                                        fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 16.sp,
-                                        color = if (isOwnMessage) Color(0xFFFFFFFF) else Color.Black
-                                    )
-                                )
+
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = formattedTime,
-                                    color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray,
-                                    style = TextStyle(
-                                        fontFamily = AppTypography.body1.fontFamily,
-                                        fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 10.sp
+                                    style = AppTypography.body1.copy(
+                                        fontSize = 10.sp,
+                                        color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray
                                     ),
                                     modifier = Modifier.align(Alignment.End)
                                 )
@@ -204,6 +255,16 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                                 .weight(1f)
                                 .height(50.dp),
                             shape = RoundedCornerShape(24.dp),
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    showLocationSheet.value = true
+                                }) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_app),
+                                        contentDescription = "Ubicación"
+                                    )
+                                }
+                            },
                             colors = TextFieldDefaults.textFieldColors(
                                 backgroundColor = Color.White,
                                 focusedIndicatorColor = Color.Transparent,
@@ -215,7 +276,13 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                         IconButton(
                             onClick = {
                                 if (message.isNotBlank()) {
-                                    authViewModel.sendMessage(routeName, message, senderName, context, onError = { errorMessage = it })
+                                    viewModel.sendMessage(
+                                        routeName,
+                                        message,
+                                        senderName,
+                                        context,
+                                        onError = { errorMessage = it }
+                                    )
                                     message = ""
                                 }
                             },
@@ -243,8 +310,8 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                     ) {
                         Button(
                             onClick = {
-                                navController.navigate(BottomNavScreen.Auth(isUserLoggedIn = false).route) {
-                                    popUpTo(BottomNavScreen.Auth(isUserLoggedIn = false).route) { inclusive = true }
+                                navController.navigate(BottomNavScreen.Auth(false).route) {
+                                    popUpTo(BottomNavScreen.Auth(false).route) { inclusive = true }
                                     launchSingleTop = true
                                 }
                             },
@@ -254,11 +321,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                             Text(
                                 text = "Log in to send messages",
                                 color = Color.White,
-                                style = TextStyle(
-                                    fontFamily = AppTypography.h1.fontFamily,
-                                    fontWeight = AppTypography.h1.fontWeight,
-                                    fontSize = 20.sp
-                                )
+                                style = AppTypography.h1.copy(fontSize = 20.sp)
                             )
                         }
                     }
@@ -267,7 +330,7 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (errorMessage != null) {
+            errorMessage?.let {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -277,12 +340,130 @@ fun ChatScreen(routeName: String, repository: AuthRepository, navController: Nav
                 ) {
                     ErrorMessageCard(
                         message = "Error al enviar mensaje",
-                        reason = errorMessage ?: "",
+                        reason = it,
                         onDismiss = { errorMessage = null }
                     )
+                }
+            }
+
+            if (showLocationSheet.value) {
+                var userLoc by remember { mutableStateOf<LatLng?>(null) }
+                val cameraState = rememberCameraPositionState()
+                LaunchedEffect(hasLocationPermission) {
+                    if (hasLocationPermission) {
+                        val fused = LocationServices.getFusedLocationProviderClient(context)
+                        val location = fused.lastLocation.await()
+                        location?.let {
+                            val latLng = LatLng(it.latitude, it.longitude)
+                            userLoc = latLng
+                            cameraState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+                        }
+                    }
+                }
+
+                    ModalBottomSheet(
+                        onDismissRequest = { showLocationSheet.value = false },
+                        sheetState = sheetState,
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        tonalElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .border(
+                                            width = 4.dp,
+                                            color = Color(0xFF00933B),
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .size(44.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_app),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(35.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = "Send location",
+                                    style = AppTypography.h1,
+                                    fontSize = 22.sp,
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (userLoc != null) {
+                                GoogleMap(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp)
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    cameraPositionState = cameraState
+                                ) {
+                                    Marker(
+                                        state = MarkerState(position = userLoc!!),
+                                        title = "Tu ubicación"
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = {
+                                        userLoc?.let { loc ->
+                                            viewModel.sendMessage(
+                                                routeName,
+                                                messageText = null,
+                                                senderName = senderName,
+                                                context = context,
+                                                location = loc,
+                                                onError = { errorMessage = it }
+                                            )
+                                            showLocationSheet.value = false
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(30.dp),
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                                ) {
+                                    Text(
+                                        "Send your current location",
+                                        color = Color.White,
+                                        style = AppTypography.h2,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
-
