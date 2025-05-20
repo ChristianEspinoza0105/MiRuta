@@ -1,11 +1,14 @@
 package com.example.miruta.ui.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
@@ -24,13 +27,19 @@ import androidx.navigation.NavController
 import com.example.miruta.R
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miruta.ui.theme.AppTypography
+import com.example.miruta.ui.viewmodel.AuthViewModel
 
 
 private val avatarResources = listOf(
@@ -51,25 +60,37 @@ private fun getAvatarResource(index: Int): Int {
 }
 
 @Composable
-fun EditProfileScreen(navController: NavController) {
-    var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
-    var showImagePopup by remember { mutableStateOf(false) }
+fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
+    val selectedImage = remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
+    val context = LocalContext.current
+
+    // Cargar datos del usuario al iniciar
+    LaunchedEffect(Unit) {
+        authViewModel.loadUserData()
+    }
+
+    // Observar cambios en el ViewModel y reflejarlos
+    LaunchedEffect(authViewModel.userName, authViewModel.userEmail, authViewModel.userPhone, authViewModel.photoIndex) {
+        name = authViewModel.userName
+        phone = authViewModel.userPhone
+        email = authViewModel.userEmail
+
+        val index = authViewModel.photoIndex.toIntOrNull() ?: 0
+        selectedImage.value = getAvatarResource(index)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Parte superior: Imagen de perfil centrada
+        Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -78,13 +99,15 @@ fun EditProfileScreen(navController: NavController) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(150.dp) // Cambiado de 100.dp a 150.dp
+                        .size(150.dp)
                         .clip(CircleShape)
                         .background(Color.LightGray)
-                        .clickable { navController.navigate("SelectImageScreen") }
+                        .clickable {
+                            navController.navigate("SelectImageScreen")
+                        }
                 ) {
                     Image(
-                        painter = painterResource(id = selectedImage),
+                        painter = painterResource(id = selectedImage.value),
                         contentDescription = "Profile Image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -94,18 +117,16 @@ fun EditProfileScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "User",
-                    fontSize = 28.sp, // Cambiado de 20.sp a 28.sp
+                    text = authViewModel.userName,
+                    fontSize = 28.sp,
                     color = Color.White,
-                    fontFamily = AppTypography.h1.fontFamily,
-                    fontWeight = AppTypography.h1.fontWeight,
+                    style = AppTypography.h1,
                     textAlign = TextAlign.Center
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Fondo gris con tarjeta blanca encima
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -120,7 +141,7 @@ fun EditProfileScreen(navController: NavController) {
                             color = Color(0xFFE0E0E0),
                             shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                         )
-                ) {  }
+                ) {}
 
                 Column(
                     modifier = Modifier
@@ -132,7 +153,6 @@ fun EditProfileScreen(navController: NavController) {
                             shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                         )
                 ) {
-                    // Título "Edit Profile" con icono de lápiz
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -143,15 +163,14 @@ fun EditProfileScreen(navController: NavController) {
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Icon",
                             tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(32.dp) // Cambiado de 24.dp a 32.dp
+                            modifier = Modifier.size(32.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Edit Profile",
+                            text = "Editar Perfil",
                             color = Color.Black,
-                            fontSize = 24.sp, // Cambiado de 18.sp a 24.sp
-                            fontFamily = AppTypography.h1.fontFamily,
-                            fontWeight = AppTypography.h1.fontWeight
+                            fontSize = 24.sp,
+                            style = AppTypography.h1
                         )
                     }
 
@@ -163,24 +182,15 @@ fun EditProfileScreen(navController: NavController) {
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Form Fields
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
                             label = {
-                                Text(
-                                    "Name",
-                                    style = TextStyle(
-                                        color = Color.Gray,
-                                        fontFamily = AppTypography.body1.fontFamily,
-                                        fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
-                                    )
-                                )
+                                Text("Nombre", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp), // Aumentado de 56.dp a 60.dp
+                                .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -195,20 +205,13 @@ fun EditProfileScreen(navController: NavController) {
                             value = phone,
                             onValueChange = { phone = it },
                             label = {
-                                Text(
-                                    "Phone Number",
-                                    style = TextStyle(
-                                        color = Color.Gray,
-                                        fontFamily = AppTypography.body1.fontFamily,
-                                        fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
-                                    )
-                                )
+                                Text("Teléfono", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp), // Aumentado de 56.dp a 60.dp
+                                .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
@@ -222,20 +225,13 @@ fun EditProfileScreen(navController: NavController) {
                             value = email,
                             onValueChange = { email = it },
                             label = {
-                                Text(
-                                    "Email",
-                                    style = TextStyle(
-                                        color = Color.Gray,
-                                        fontFamily = AppTypography.body1.fontFamily,
-                                        fontWeight = AppTypography.body1.fontWeight,
-                                        fontSize = 18.sp // Cambiado de 16.sp a 18.sp
-                                    )
-                                )
+                                Text("Correo electrónico", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp), // Aumentado de 56.dp a 60.dp
+                                .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
@@ -245,67 +241,35 @@ fun EditProfileScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        // Save Button
                         Button(
-                            onClick = { navController.popBackStack() },
+                            onClick = {
+                                authViewModel.updateUserData(
+                                    name = name,
+                                    phone = phone,
+                                    email = email,
+                                    onResult = { success ->
+                                        if (success) {
+                                            Toast.makeText(context, "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
+                                            navController.popBackStack()
+                                        } else {
+                                            Toast.makeText(context, "Error al actualizar datos", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp), // Aumentado de 56.dp a 60.dp
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF00933B)
-                            ),
+                                .height(60.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text(
-                                "Save",
-                                style = TextStyle(
-                                    fontFamily = AppTypography.button.fontFamily,
-                                    fontWeight = AppTypography.button.fontWeight,
-                                    fontSize = 24.sp
-                                ),
-                                color = Color.White
-                            )
+                            Text("Guardar", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
                         }
+
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
-        }
-
-        // Avatar Selection Dialog
-        if (showImagePopup) {
-            AlertDialog(
-                onDismissRequest = { showImagePopup = false },
-                text = {
-                    LazyColumn {
-                        items((0 until 19 step 4).toList()) { rowIndex ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                for (columnIndex in 0 until 4) {
-                                    val index = rowIndex + columnIndex
-                                    if (index < 10) {
-                                        val imgId = getAvatarResource(index)
-                                        Image(
-                                            painter = painterResource(id = imgId),
-                                            contentDescription = "Avatar $index",
-                                            modifier = Modifier
-                                                .size(screenWidth * 0.15f)
-                                                .padding(4.dp)
-                                                .clip(CircleShape)
-                                                .clickable {
-                                                    selectedImage = imgId
-                                                    showImagePopup = false
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                buttons = {}
-            )
         }
     }
 }
