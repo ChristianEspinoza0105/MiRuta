@@ -18,10 +18,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    val authRepository: AuthRepository,
+    val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -38,6 +41,25 @@ class AuthViewModel @Inject constructor(
 
     private val _userData = MutableStateFlow<Map<String, Any>?>(null)
     val userData: StateFlow<Map<String, Any>?> = _userData
+
+    var userName by mutableStateOf("")
+        private set
+
+    var userPhone by mutableStateOf("")
+        private set
+
+    var userEmail by mutableStateOf("")
+        private set
+
+    var isLoading by mutableStateOf(true)
+        private set
+
+    var photoIndex by mutableStateOf("0")
+        private set
+
+    init {
+        getInitialData()
+    }
 
     //Conexión de usuario
 
@@ -115,6 +137,95 @@ class AuthViewModel @Inject constructor(
                 Log.e("AuthViewModel", "Error al iniciar sesión: $message")
             }
         }
+    }
+
+    fun getInitialData() {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    userName = document.getString("name") ?: "User"
+                    photoIndex = document.getString("profilePictureUrl") ?: "0"
+                }
+            }
+            .addOnFailureListener {
+                userName = "User"
+                photoIndex = "0"
+            }
+    }
+
+    fun loadUserData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val uid = currentUser.uid
+            firestore.collection("users").document(uid).get()
+                .addOnSuccessListener { document ->
+                    userEmail = document.getString("email") ?: ""
+                    userName = document.getString("name") ?: ""
+                    userPhone = document.getString("phone") ?: ""
+                    photoIndex = document.getString("photoIndex") ?: ""
+                    isLoading = false
+                }
+                .addOnFailureListener {
+                    isLoading = false
+                }
+        } else {
+            isLoading = false
+        }
+    }
+
+    fun updateUserData(name: String, phone: String, email: String, onResult: (Boolean) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val uid = currentUser.uid
+            val updatedData = hashMapOf(
+                "name" to name,
+                "phone" to phone,
+                "email" to email
+            )
+
+            firestore.collection("users").document(uid)
+                .update(updatedData as Map<String, Any>)
+                .addOnSuccessListener {
+                    onResult(true)
+                }
+                .addOnFailureListener {
+                    onResult(false)
+                }
+        } else {
+            onResult(false)
+        }
+    }
+
+    fun updateUserAvatar(avatarIndex: Int, onResult: (Boolean) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val uid = currentUser.uid
+            firestore.collection("users").document(uid)
+                .update("photoIndex", avatarIndex.toString())
+                .addOnSuccessListener {
+                    photoIndex = avatarIndex.toString() // actualiza también la variable local si la usas
+                    onResult(true)
+                }
+                .addOnFailureListener {
+                    onResult(false)
+                }
+        } else {
+            onResult(false)
+        }
+    }
+
+    fun refreshUserData() {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    userName = document.getString("name") ?: "User"
+                    photoIndex = document.getString("photoIndex") ?: "0"
+                }
+            }
     }
 
     //Cerrar sesión

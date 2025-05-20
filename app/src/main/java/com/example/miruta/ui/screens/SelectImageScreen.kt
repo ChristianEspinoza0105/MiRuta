@@ -27,12 +27,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
 import com.example.miruta.ui.theme.AppTypography
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.miruta.ui.viewmodel.AuthViewModel
 
 @Composable
-fun SelectImageScreen(navController: NavController) {
+fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
+
     val avatars = listOf(
         R.drawable.avatar_placeholder_1,
         R.drawable.avatar_placeholder_2,
@@ -42,7 +46,14 @@ fun SelectImageScreen(navController: NavController) {
         R.drawable.avatar_placeholder_6
     )
 
-    var selectedAvatar by remember { mutableStateOf(avatars[0]) }
+    val viewModelAvatarIndex by remember { derivedStateOf { authViewModel.photoIndex.toIntOrNull()?.coerceIn(0, avatars.lastIndex) ?: 0 } }
+
+    var selectedAvatar by remember { mutableStateOf(avatars[viewModelAvatarIndex]) }
+
+    // Escuchar cambios en photoIndex del ViewModel
+    LaunchedEffect(viewModelAvatarIndex) {
+        selectedAvatar = avatars[viewModelAvatarIndex]
+    }
 
     Column(
         modifier = Modifier
@@ -127,7 +138,16 @@ fun SelectImageScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(36.dp))
 
         androidx.compose.material3.Button(
-            onClick = { navController.popBackStack() },
+            onClick = {
+                val avatarIndex = avatars.indexOf(selectedAvatar)
+                authViewModel.updateUserAvatar(avatarIndex) { success ->
+                    if (success) {
+                        navController.popBackStack()
+                    } else {
+
+                    }
+                }
+            },
             modifier = Modifier
                 .width(300.dp)
                 .height(60.dp)

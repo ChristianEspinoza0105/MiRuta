@@ -49,7 +49,7 @@ class AuthRepository @Inject constructor(
                         "email" to email,
                         "role" to "user",
                         "createdAt" to FieldValue.serverTimestamp(),
-                        "profilePictureUrl" to "",
+                        "photoIndex" to "",
                         "favorites" to emptyList<String>()
                     )
 
@@ -93,7 +93,7 @@ class AuthRepository @Inject constructor(
                         "pates" to plates,
                         "role" to "driver",
                         "createdAt" to FieldValue.serverTimestamp(),
-                        "profilePictureUrl" to "",
+                        "photoIndex" to "",
                     )
 
                     firestore.collection("drivers").document(uid)

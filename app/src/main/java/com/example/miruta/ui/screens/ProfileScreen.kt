@@ -30,16 +30,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.miruta.R
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
-
+fun getAvatarResourceByIndex(index: Int): Int {
+    return when (index) {
+        0 -> R.drawable.avatar_placeholder_1
+        1 -> R.drawable.avatar_placeholder_2
+        2 -> R.drawable.avatar_placeholder_3
+        3 -> R.drawable.avatar_placeholder_4
+        4 -> R.drawable.avatar_placeholder_5
+        5 -> R.drawable.avatar_placeholder_6
+        else -> R.drawable.avatar_placeholder_1
+    }
+}
 
 @Composable
 fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
-    var selectedImage by remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
-    var showImagePopup by remember { mutableStateOf(false) }
+    val selectedImage = getAvatarResourceByIndex(authViewModel.photoIndex.toIntOrNull() ?: 0)
+
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+
+    LaunchedEffect(currentBackStackEntry) {
+        // Recargar datos del usuario (por ejemplo, nombre y avatar)
+        authViewModel.refreshUserData()
+    }
 
     Box(
         modifier = Modifier
@@ -73,7 +90,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "User",
+                    text = authViewModel.userName,
                     fontSize = 28.sp, // Cambiado de 20.sp a 28.sp
                     color = Color.White,
                     fontFamily = AppTypography.h1.fontFamily,
