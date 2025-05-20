@@ -16,6 +16,7 @@ import com.example.miruta.ui.screens.CommunityScreen
 import com.example.miruta.ui.screens.EditProfileScreen
 import com.example.miruta.ui.screens.ExploreScreen
 import com.example.miruta.ui.screens.LinesScreen
+import com.example.miruta.ui.screens.LiveLocationMapScreen
 import com.example.miruta.ui.screens.MapScreen
 import com.example.miruta.ui.screens.MyRouteScreen
 import com.example.miruta.ui.screens.LoginScreen
@@ -74,6 +75,23 @@ fun BottomNavGraph(
                 val hex = back.arguments!!.getString("color")!!
                 val string = back.arguments!!.getString("routeShortName")!!
                 MapScreen(routeId = id, routeColorHex = hex, routeShortName = string)
+            }
+
+            composable(
+                "live_location_map/{liveLocationDocId}/{routeId}",
+                arguments = listOf(
+                    navArgument("liveLocationDocId") { type = NavType.StringType },
+                    navArgument("routeId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val liveLocationDocId = backStackEntry.arguments?.getString("liveLocationDocId") ?: ""
+                val routeId = backStackEntry.arguments?.getString("routeId") ?: ""
+
+                LiveLocationMapScreen(
+                    liveLocationDocId = liveLocationDocId,
+                    routeId = routeId,
+                    navController = navController
+                )
             }
 
             composable("RegisterScreen") {

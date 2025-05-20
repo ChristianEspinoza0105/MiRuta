@@ -5,15 +5,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.miruta.data.RutaClassifier
+import com.example.miruta.data.ml.RutaClassifier
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -155,75 +154,9 @@ class AuthViewModel @Inject constructor(
         auth.removeAuthStateListener(authStateListener)
     }
 
-    fun sendMessage(
-        routeId: String,
-        messageText: String?,
-        senderName: String,
-        context: Context,
-        location: LatLng? = null,
-        onError: (String) -> Unit
-    ) {
-        if (messageText == null && location == null) {
-            onError("El mensaje o la ubicación deben estar presentes")
-            return
-        }
+    //Mensajes
 
-        if (messageText != null) {
-            when (val validation = isMessageAllowed(messageText)) {
-                is MessageValidationResult.Denied -> {
-                    onError(validation.reason)
-                    return
-                }
-                is MessageValidationResult.Allowed -> { }
-                else -> {
-                    onError("Error desconocido en la validación del mensaje.")
-                    return
-                }
-            }
-
-            val clasificador = RutaClassifier(context)
-            if (!clasificador.esMensajeRelacionado(messageText)) {
-                onError("Tu mensaje no está relacionado con rutas.")
-                return
-            }
-        }
-
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        if (currentUser == null) {
-            onError("Usuario no autenticado.")
-            return
-        }
-
-        val message = if (location != null) {
-            mapOf(
-                "type" to "location",
-                "latitude" to location.latitude,
-                "longitude" to location.longitude,
-                "senderId" to currentUser.uid,
-                "senderName" to senderName,
-                "timestamp" to FieldValue.serverTimestamp()
-            )
-        } else {
-            mapOf(
-                "type" to "text",
-                "text" to messageText,
-                "senderId" to currentUser.uid,
-                "senderName" to senderName,
-                "timestamp" to FieldValue.serverTimestamp()
-            )
-        }
-
-        FirebaseFirestore.getInstance()
-            .collection("chats")
-            .document(routeId)
-            .collection("messages")
-            .add(message)
-            .addOnFailureListener { e ->
-                onError("Error al enviar el mensaje: ${e.message}")
-            }
-    }
-
-    //Filtrado de mensajes (primera capa)
+    //Filtrado de mensajes
     private fun isMessageAllowed(text: String): MessageValidationResult {
         val forbiddenWords = listOf(
             "idiota",
@@ -511,21 +444,101 @@ class AuthViewModel @Inject constructor(
         return MessageValidationResult.Allowed
     }
 
-    //Actualización de mensajes
-    private var listenerRegistration: ListenerRegistration? = null
+    fun sendMessage(
+        routeId: String,
+        messageText: String?,
+        senderName: String,
+        context: Context,
+        location: LatLng? = null,
+        liveLocation: Boolean = false,
+        onError: (String) -> Unit
+    ) {
+        if (messageText == null && location == null && !liveLocation) {
+            onError("El mensaje o la ubicación deben estar presentes")
+            return
+        }
 
-    fun listenToMessages(routeId: String, onMessagesChanged: (List<ChatMessage>) -> Unit) {
-        listenerRegistration?.remove()
-        listenerRegistration = firestore.collection("chats").document(routeId)
+        if (messageText != null) {
+            when (val validation = isMessageAllowed(messageText)) {
+                is MessageValidationResult.Denied -> {
+                    onError(validation.reason)
+                    return
+                }
+                is MessageValidationResult.Allowed -> { }
+                else -> {
+                    onError("Error desconocido en la validación del mensaje.")
+                    return
+                }
+            }
+
+            val clasificador = RutaClassifier(context)
+            if (!clasificador.esMensajeRelacionado(messageText)) {
+                onError("Tu mensaje no está relacionado con rutas.")
+                return
+            }
+        }
+
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onError("Usuario no autenticado.")
+            return
+        }
+
+        val message = when {
+            liveLocation && location != null -> mapOf(
+                "type" to "live_location",
+                "latitude" to location.latitude,
+                "longitude" to location.longitude,
+                "senderId" to currentUser.uid,
+                "senderName" to senderName,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+            location != null -> mapOf(
+                "type" to "location",
+                "latitude" to location.latitude,
+                "longitude" to location.longitude,
+                "senderId" to currentUser.uid,
+                "senderName" to senderName,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+            else -> mapOf(
+                "type" to "text",
+                "text" to messageText,
+                "senderId" to currentUser.uid,
+                "senderName" to senderName,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+        }
+
+
+        FirebaseFirestore.getInstance()
+            .collection("chats")
+            .document(routeId)
             .collection("messages")
-            .orderBy("timestamp")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null || snapshots == null) return@addSnapshotListener
-
-                val msgs = snapshots.documents.mapNotNull { it.toObject(ChatMessage::class.java) }
-                onMessagesChanged(msgs)
+            .add(message)
+            .addOnFailureListener { e ->
+                onError("Error al enviar el mensaje: ${e.message}")
             }
     }
+
+
+    fun listenToMessages(routeId: String, onMessagesChanged: (List<ChatMessage>) -> Unit) {
+        FirebaseFirestore.getInstance()
+            .collection("chats")
+            .document(routeId)
+            .collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null || snapshots == null) return@addSnapshotListener
+
+                val messages = snapshots.documents.mapNotNull { doc ->
+                    doc.toObject(ChatMessage::class.java)?.copy(id = doc.id)
+                }
+
+                onMessagesChanged(messages)
+            }
+    }
+
 
 }
 

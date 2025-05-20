@@ -1,4 +1,4 @@
-package com.example.miruta.data
+package com.example.miruta.data.ml
 
 import android.content.Context
 import org.tensorflow.lite.Interpreter
