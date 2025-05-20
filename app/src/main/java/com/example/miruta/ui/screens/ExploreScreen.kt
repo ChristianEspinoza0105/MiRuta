@@ -41,6 +41,7 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
@@ -53,6 +54,9 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.example.miruta.data.models.RouteRetroFit
+import com.example.miruta.utils.RetrofitInstance
+import com.example.miruta.utils.PolylineDecoder
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.libraries.places.api.model.LocationBias
@@ -97,6 +101,9 @@ fun ExploreScreen() {
 
     val coroutineScope = rememberCoroutineScope()
 
+    // NUEVO: Estado para almacenar rutas obtenidas
+    val routes = remember { mutableStateListOf<RouteRetroFit>() }
+
     fun updateCameraPosition(origen: LatLng?, destino: LatLng?) {
         val positions = listOfNotNull(origen, destino)
         when (positions.size) {
@@ -116,6 +123,28 @@ fun ExploreScreen() {
                         CameraUpdateFactory.newLatLngZoom(positions.first(), 12f)
                     )
                 }
+            }
+        }
+    }
+
+    // NUEVO: Obtener rutas cuando origen y destino están definidos
+    LaunchedEffect(origenLatLng, destinoLatLng) {
+        routes.clear()  // limpiar rutas previas
+        if (origenLatLng != null && destinoLatLng != null) {
+            try {
+                val response = RetrofitInstance.api.getDirections(
+                    origin = "${origenLatLng!!.latitude},${origenLatLng!!.longitude}",
+                    destination = "${destinoLatLng!!.latitude},${destinoLatLng!!.longitude}"
+                )
+                if (response.isSuccessful) {
+                    response.body()?.routes?.forEach {
+                        routes.add(it)
+                    }
+                } else {
+                    Log.e("ExploreScreen", "Error directions: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ExploreScreen", "Exception directions: ${e.message}")
             }
         }
     }
@@ -157,6 +186,16 @@ fun ExploreScreen() {
                     state = MarkerState(position = latLng),
                     title = "Destino",
                     icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                )
+            }
+
+            // NUEVO: Dibujar rutas (polylines)
+            routes.forEachIndexed { index, route ->
+                val points = PolylineDecoder.decode(route.overview_polyline.points)
+                Polyline(
+                    points = points,
+                    color = getRouteColor(index),
+                    width = 12f
                 )
             }
         }
@@ -393,18 +432,33 @@ object PlacesClientProvider {
 }
 
 suspend fun fetchPlaceLatLng(context: Context, placeId: String): LatLng? {
+    val placesClient = PlacesClientProvider.getClient(context)
+
+    val placeFields = listOf(Place.Field.LAT_LNG)
+
+    val request = FetchPlaceRequest.builder(placeId, placeFields).build()
+
     return try {
-        val placesClient = PlacesClientProvider.getClient(context)
-        val placeFields = listOf(Place.Field.LAT_LNG)
-        val request = FetchPlaceRequest.builder(placeId, placeFields).build()
         val response = placesClient.fetchPlace(request).await()
         response.place.latLng
     } catch (e: Exception) {
-        Log.e("FetchPlaceLatLng", "Error fetching place LatLng", e)
+        Log.e("fetchPlaceLatLng", "Error fetching place: ${e.message}")
         null
     }
 }
 
+
 private fun getDeviceLocation(context: Context) =
     LocationServices.getFusedLocationProviderClient(context)
         .lastLocation
+
+
+fun getRouteColor(index: Int): Color {
+    return when (index % 5) {
+        0 -> Color.Red
+        1 -> Color.Blue
+        2 -> Color.Green
+        3 -> Color.Magenta
+        else -> Color.Cyan
+    }
+}
