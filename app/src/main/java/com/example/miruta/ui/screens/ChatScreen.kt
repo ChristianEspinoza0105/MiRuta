@@ -64,6 +64,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextDecoration
+import com.example.miruta.data.repository.LiveLocationSharing
+import com.example.miruta.utils.getLocationFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +74,7 @@ fun ChatScreen(
     repository: AuthRepository,
     navController: NavHostController,
     onBackClick: () -> Unit,
-    onCircleIconClick: () -> Unit
+    onCircleIconClick: () -> Unit,
 ) {
     val factory = AuthViewModelFactory(repository)
     val viewModel: AuthViewModel = viewModel(factory = factory)
@@ -114,9 +116,22 @@ fun ChatScreen(
     LaunchedEffect(routeName, isUserLoggedIn) {
         if (isUserLoggedIn) {
             viewModel.listenToMessages(routeName) { newMessages ->
-                messages = newMessages
+                val updatedMessages = messages.toMutableList()
+
+                for (newMsg in newMessages) {
+                    val index = updatedMessages.indexOfFirst { it.id == newMsg.id }
+
+                    if (index != -1) {
+                        updatedMessages[index] = newMsg
+                    } else {
+                        updatedMessages.add(newMsg)
+                    }
+                }
+
+                messages = updatedMessages
                 isLoading = false
             }
+
         } else {
             messages = emptyList()
             isLoading = false
@@ -164,7 +179,7 @@ fun ChatScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp + statusBarHeightDp)
+                                .height(60.dp + statusBarHeightDp)
                                 .background(
                                     color = Color(0xFF00933B),
                                     shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
@@ -263,19 +278,23 @@ fun ChatScreen(
                                             )
                                             .padding(14.dp)
                                     ) {
-                                        if (msg.type == "location") {
+                                        if (msg.type == "location" || msg.type == "live_location") {
                                             val lat = msg.latitude ?: 0.0
                                             val lon = msg.longitude ?: 0.0
 
                                             val mapIntent = {
-                                                val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
-                                                val intent = Intent(Intent.ACTION_VIEW, uri)
-                                                intent.setPackage("com.google.android.apps.maps")
-                                                context.startActivity(intent)
+                                                if (msg.type == "location") {
+                                                    val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                                    intent.setPackage("com.google.android.apps.maps")
+                                                    context.startActivity(intent)
+                                                } else {
+                                                    navController.navigate("live_location_map/${msg.liveLocationDocId}/$routeName")
+                                                }
                                             }
 
                                             Text(
-                                                text = "📍 Ubicación ",
+                                                text = if (msg.type == "location") "📍 Ubicación" else "📍 Ubicación en vivo",
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isOwnMessage) Color.White else Color.Black,
                                                 modifier = Modifier.clickable {
@@ -559,7 +578,7 @@ fun ChatScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Text(
-                                    text = "Send location",
+                                    text = "Share location",
                                     style = AppTypography.h1,
                                     fontSize = 22.sp,
                                 )
@@ -607,7 +626,42 @@ fun ChatScreen(
                                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
                                 ) {
                                     Text(
-                                        "Send your current location",
+                                        "Share your current location",
+                                        color = Color.White,
+                                        style = AppTypography.h2,
+                                        fontSize = 18.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                var liveSharing by remember { mutableStateOf<LiveLocationSharing?>(null) }
+
+                                Button(
+                                    onClick = {
+                                        if (liveSharing == null) {
+                                            val user = FirebaseAuth.getInstance().currentUser ?: return@Button
+                                            val liveLocationSharing = LiveLocationSharing(routeName, senderName, user.uid)
+
+                                            val locationFlow = getLocationFlow(context)
+
+                                            liveLocationSharing.startSharing(context, locationFlow) { errorMsg ->
+                                                errorMessage = errorMsg
+                                            }
+                                            liveSharing = liveLocationSharing
+                                        } else {
+                                            liveSharing?.stopSharing()
+                                            liveSharing = null
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = RoundedCornerShape(30.dp),
+                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                                ) {
+                                    Text(
+                                        "Share your live location",
                                         color = Color.White,
                                         style = AppTypography.h2,
                                         fontSize = 18.sp

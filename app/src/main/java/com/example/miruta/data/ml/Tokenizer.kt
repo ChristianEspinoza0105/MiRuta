@@ -1,4 +1,4 @@
-package com.example.miruta.data
+package com.example.miruta.data.ml
 
 import org.json.JSONObject
 
