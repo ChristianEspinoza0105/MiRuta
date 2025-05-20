@@ -105,7 +105,7 @@ fun BottomNavGraph(
                 ProfileScreen(navController)
             }
             composable("RegisterDriverScreen") {
-                RegisterDriverScreen(navController)
+                RegisterDriverScreen(navController, authViewModel)
             }
 
             composable(BottomNavScreen.Auth(isUserLoggedIn).route) {

@@ -83,7 +83,7 @@ fun FavoriteRouteCard(
             androidx.compose.material3.Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                 contentDescription = "Favorito",
-                tint = if (isFavorite) Color.Yellow else Color.Gray,
+                tint = if (isFavorite) Color(0xFFF3CF21) else Color.Gray,
                 modifier = Modifier.size(32.dp)
             )
         }

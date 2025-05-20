@@ -11,9 +11,11 @@ import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,6 +32,9 @@ import com.example.miruta.R
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 
 @Composable
 fun LoginScreen(
@@ -124,7 +129,9 @@ fun LoginScreen(
                     shape = RoundedCornerShape(16.dp)
                 )
         ) {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 Text(
                     text = "Log In",
                     color = Color(0xFF00933B),
@@ -141,54 +148,48 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = {
-                        Text(
-                            text = "Correo electrónico",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
+                    label = { Text("Email") },
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .shadow(
+                            elevation = 10.600000381469727.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(40)),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                    ),
+                    shape = RoundedCornerShape(50)
                 )
 
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = {
-                        Text(
-                            text = "Contraseña",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
+                    label = { Text("Password") },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .shadow(
+                            elevation = 10.600000381469727.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(40)),
+                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                    ),
+                    shape = RoundedCornerShape(50)
                 )
 
                 Text(
@@ -203,8 +204,6 @@ fun LoginScreen(
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 20.dp)
                 )
-
-                val loginState = remember { mutableStateOf<String?>(null) }
 
                 Button(
                     onClick = {
@@ -235,34 +234,10 @@ fun LoginScreen(
                             fontSize = 24.sp
                         )
                     )
-                    loginState.value?.let { state ->
-                        Text(
-                            text = state,
-                            color = if (state == "Login exitoso") Color.Green else Color.Red,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-
-                        LaunchedEffect(state) {
-                            Log.d("LoginState", "Login state: $state")
-                            when (state) {
-                                "Login exitoso" -> {
-                                    authViewModel.setUserLoggedIn(true)
-                                    navController.navigate(BottomNavScreen.Explore.route) {
-                                        popUpTo("LoginScreen") { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                }
-                                !in listOf(null, "") -> {
-                                    Toast.makeText(context, state, Toast.LENGTH_LONG).show()
-                                }
-                            }
-                            loginState.value = null
-                        }
-                    }
                 }
 
                 Text(
-                    text = "Don’t have an account? Sign in",
+                    text = "Don't have an account? Sign in",
                     color = Color.DarkGray,
                     style = TextStyle(
                         fontFamily = AppTypography.body1.fontFamily,
@@ -278,6 +253,7 @@ fun LoginScreen(
                 )
             }
         }
+
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
