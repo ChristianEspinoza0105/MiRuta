@@ -205,7 +205,7 @@ class AuthViewModel @Inject constructor(
             firestore.collection("users").document(uid)
                 .update("photoIndex", avatarIndex.toString())
                 .addOnSuccessListener {
-                    photoIndex = avatarIndex.toString() // actualiza también la variable local si la usas
+                    photoIndex = avatarIndex.toString()
                     onResult(true)
                 }
                 .addOnFailureListener {
@@ -232,7 +232,23 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         authRepository.logoutUser()
+
         _isUserLoggedIn.value = false
+        _loginState.value = null
+        _registerState.value = null
+        _userData.value = null
+
+        userName = ""
+        userEmail = ""
+        userPhone = ""
+        photoIndex = "0"
+        isLoading = true
+
+        Log.d("AuthViewModel", "Sesión cerrada. Datos del usuario limpiados.")
+    }
+
+    fun resetRegisterState() {
+        _registerState.value = null
     }
 
     //Carga de datos

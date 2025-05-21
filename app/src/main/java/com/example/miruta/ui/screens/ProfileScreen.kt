@@ -54,7 +54,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     LaunchedEffect(currentBackStackEntry) {
-        // Recargar datos del usuario (por ejemplo, nombre y avatar)
         authViewModel.refreshUserData()
     }
 
@@ -66,7 +65,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Parte superior: Imagen de perfil y texto centrado
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,7 +73,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
             ) {
                 Box(
                     modifier = Modifier
-                        .size(150.dp) // Cambiado de 100.dp a 150.dp
+                        .size(150.dp)
                         .clip(CircleShape)
                         .background(Color.LightGray)
                 ) {
@@ -91,7 +89,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 
                 Text(
                     text = authViewModel.userName,
-                    fontSize = 28.sp, // Cambiado de 20.sp a 28.sp
+                    fontSize = 28.sp,
                     color = Color.White,
                     fontFamily = AppTypography.h1.fontFamily,
                     fontWeight = AppTypography.h1.fontWeight,
@@ -101,7 +99,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Fondo gris con tarjeta blanca encima
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -123,7 +120,6 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                         .background(Color.White, shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
                         .padding(vertical = 24.dp)
                 ) {
-                    // Opción: Edit profile
                     ProfileOption(
                         icon = Icons.Default.Edit,
                         iconColor = Color(0xFFFFC107),
@@ -137,19 +133,17 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 
                     Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
 
-                    // Opción: Notifications
                     ProfileOption(
                         icon = Icons.Default.Notifications,
                         iconColor = Color(0xFFFFC107),
                         text = "Notifications",
                         textColor = Color.Black
                     ) {
-                        // acción para notificaciones (si aplica)
+                        // acción para notificaciones
                     }
 
                     Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray)
 
-                    // Opción: Log out
                     ProfileOption(
                         icon = Icons.Default.ExitToApp,
                         iconColor = Color.Red,
@@ -186,12 +180,12 @@ fun ProfileOption(
             imageVector = icon,
             contentDescription = null,
             tint = iconColor,
-            modifier = Modifier.size(32.dp) // Cambiado de 24.dp a 32.dp
+            modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            fontSize = 20.sp, // Cambiado de 16.sp a 20.sp
+            fontSize = 20.sp,
             color = textColor,
             fontFamily = AppTypography.body1.fontFamily,
             fontWeight = AppTypography.body1.fontWeight,

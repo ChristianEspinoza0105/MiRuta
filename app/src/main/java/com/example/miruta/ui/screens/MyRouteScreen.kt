@@ -339,13 +339,16 @@ fun CurrentLocationBottomSheetContent(
                     .background(Color.White, RoundedCornerShape(40))
                     .fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
+                    cursorColor = Color.Black,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
-                ),
-                shape = RoundedCornerShape(50)
+                    focusedLabelColor = Color.Black,
+                    ),
+                shape = RoundedCornerShape(50),
+                singleLine = true
             )
         }
 
@@ -374,13 +377,16 @@ fun CurrentLocationBottomSheetContent(
                         )
                         .background(Color.White, RoundedCornerShape(40)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -461,13 +467,16 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                     .background(Color.White, RoundedCornerShape(40))
                     .fillMaxWidth(),
                 colors = TextFieldDefaults.colors(
+                    cursorColor = Color.Black,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
-                ),
-                shape = RoundedCornerShape(50)
+                    focusedLabelColor = Color.Black,
+                    ),
+                shape = RoundedCornerShape(50),
+                singleLine = true
             )
             Spacer(modifier = Modifier.height(16.dp))
             //Stops buttons
@@ -524,12 +533,14 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                                     .fillMaxWidth()
                                     .background(Color.White),
                                 colors = TextFieldDefaults.colors(
+                                    cursorColor = Color.Black,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                     disabledIndicatorColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent
-                                )
+                                    focusedContainerColor = Color.Transparent,
+                                    focusedLabelColor = Color.Black
+                                    )
                             )
                             Divider(modifier = Modifier.padding(vertical = 4.dp))
                         }
@@ -788,13 +799,16 @@ fun RouteSearchBottomSheetContent(onDismiss: () -> Unit, navController: NavContr
                 .background(Color.White, RoundedCornerShape(40))
                 .fillMaxWidth(),
             colors = TextFieldDefaults.colors(
+                cursorColor = Color.Black,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
-            ),
-            shape = RoundedCornerShape(50)
+                focusedContainerColor = Color.Transparent,
+                focusedLabelColor = Color.Black
+                ),
+            shape = RoundedCornerShape(50),
+            singleLine = true
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -871,13 +885,16 @@ fun LocationBottomSheetContent(
                 .background(Color.White, RoundedCornerShape(40))
                 .fillMaxWidth(),
             colors = TextFieldDefaults.colors(
+                cursorColor = Color.Black,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent
-            ),
-            shape = RoundedCornerShape(50)
+                focusedContainerColor = Color.Transparent,
+                focusedLabelColor = Color.Black
+                ),
+            shape = RoundedCornerShape(50),
+            singleLine = true
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -1078,7 +1095,7 @@ fun ChooseMapBottomSheetContent(
                         Marker(
                             state = MarkerState(position = latLng),
                             title = "Selected Location",
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED),
                         )
                     }
                 }
@@ -1103,15 +1120,22 @@ fun ChooseMapBottomSheetContent(
                     )
                     .background(Color.White, RoundedCornerShape(40)),
                 colors = TextFieldDefaults.colors(
+                    cursorColor = Color.Black,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
-                ),
+                    focusedLabelColor = Color.Black
+                    ),
                 shape = RoundedCornerShape(50),
+                singleLine = true,
                 readOnly = true,
-                placeholder = { Text("Selecciona una ubicación en el mapa") }
+                placeholder = {
+                    if (locationName.isEmpty()) {
+                        Text("Selecciona una ubicación en el mapa")
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.width(8.dp))

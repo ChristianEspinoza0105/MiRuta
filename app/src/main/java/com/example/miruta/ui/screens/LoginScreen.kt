@@ -145,30 +145,35 @@ fun LoginScreen(
                         .padding(start = 45.dp, top = 20.dp)
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
                     modifier = Modifier
                         .fillMaxWidth()
+
                         .padding(horizontal = 45.dp, vertical = 10.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
                         .background(Color.White, RoundedCornerShape(40)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
                     ),
-                    shape = RoundedCornerShape(50)
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
+
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
@@ -177,19 +182,22 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 45.dp, vertical = 10.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
                         .background(Color.White, RoundedCornerShape(40)),
                     colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
                 Text(
@@ -258,7 +266,7 @@ fun LoginScreen(
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
 
-        val imageWidth = screenWidth * 0.5f
+        val imageWidth = screenWidth * 0.40f
         val imageHeight = screenHeight * 0.2f
         val guideline = createGuidelineFromTop(0.090f)
         val guidelineStart = createGuidelineFromStart(0.5f)

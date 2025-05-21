@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.TextField
 import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -19,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -33,8 +33,6 @@ import com.example.miruta.R
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 
 @Composable
@@ -47,6 +45,14 @@ authViewModel: AuthViewModel = hiltViewModel()
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     val context = LocalContext.current
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val horizontalPadding = (screenWidth.value * 0.1).dp
+    val fieldCornerRadius = (screenWidth.value * 0.05).dp
+    val textFieldFontSize = (screenWidth.value * 0.04).sp
 
     ConstraintLayout(
         modifier = Modifier
@@ -129,96 +135,108 @@ authViewModel: AuthViewModel = hiltViewModel()
                         .padding(start = 45.dp, top = 20.dp)
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text("Name", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone number") },
+                    label = { Text("Phone number", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text("Email", fontSize = textFieldFontSize)  },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password") },
+                    label = { Text("Password", fontSize = textFieldFontSize)},
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 10.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
                     colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
                 Button(
@@ -302,10 +320,10 @@ authViewModel: AuthViewModel = hiltViewModel()
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
 
-        val imageWidth = screenWidth * 0.4f
+        val imageWidth = screenWidth * 0.35f
         val imageHeight = screenHeight * 0.2f
         val guideline = createGuidelineFromTop(0.090f)
-        val guidelineStart = createGuidelineFromStart(0.5f)
+        val guidelineStart = createGuidelineFromStart(0.55f)
         Image(
             painter = painterResource(id = R.drawable.ic_bus),
             contentDescription = "Logo",

@@ -8,19 +8,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.TextField
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +45,7 @@ import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.style.TextAlign
 
 
@@ -63,6 +61,18 @@ fun RegisterDriverScreen(
     var route by remember { mutableStateOf("") }
     var plates by remember { mutableStateOf("") }
     val context = LocalContext.current
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val horizontalPadding = (screenWidth.value * 0.1).dp
+    val fieldCornerRadius = (screenWidth.value * 0.05).dp
+    val textFieldFontSize = (screenWidth.value * 0.04).sp
+
+    LaunchedEffect(Unit) {
+        authViewModel.resetRegisterState()
+    }
 
     ConstraintLayout(
         modifier = Modifier
@@ -152,147 +162,165 @@ fun RegisterDriverScreen(
                 )
 
 
-                OutlinedTextField(
+                TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text("Name", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true,
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone") },
+                    label = { Text("Phone", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text("Email", fontSize = textFieldFontSize)  },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
 
 
-                OutlinedTextField(
+                TextField(
                     value = route,
                     onValueChange = { route = it },
-                    label = { Text("Route") },
+                    label = { Text("Route", fontSize = textFieldFontSize)  },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
 
 
-                OutlinedTextField(
+                TextField(
                     value = plates,
                     onValueChange = { plates = it },
-                    label = { Text("Plates") },
+                    label = { Text("Plates", fontSize = textFieldFontSize)   },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
 
-                OutlinedTextField(
+                TextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password") },
+                    label = { Text("Password", fontSize = textFieldFontSize)  },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 45.dp, vertical = 8.dp)
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
                         .shadow(
-                            elevation = 10.600000381469727.dp,
+                            elevation = 20.dp,
                             spotColor = Color(0x40000000),
                             ambientColor = Color(0x40000000)
                         )
-                        .background(Color.White, RoundedCornerShape(40)),
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
-                    ),
-                    shape = RoundedCornerShape(50)
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
 
@@ -369,7 +397,7 @@ fun RegisterDriverScreen(
 
 
             Text(
-                text = "Are you an User? Click here",
+                text = "Not a driver? Click here to continue as a user",
                 color = Color.DarkGray,
                 style = TextStyle(
                     fontFamily = AppTypography.body1.fontFamily,
@@ -405,10 +433,10 @@ fun RegisterDriverScreen(
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
 
-        val imageWidth = screenWidth * 0.4f
+        val imageWidth = screenWidth * 0.35f
         val imageHeight = screenHeight * 0.2f
-        val guideline = createGuidelineFromTop(0.060f)
-        val guidelineStart = createGuidelineFromStart(0.5f)
+        val guideline = createGuidelineFromTop(0.030f)
+        val guidelineStart = createGuidelineFromStart(0.55f)
         Image(
             painter = painterResource(id = R.drawable.ic_driver),
             contentDescription = "Logo",
