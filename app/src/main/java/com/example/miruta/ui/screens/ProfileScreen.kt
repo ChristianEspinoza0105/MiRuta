@@ -126,8 +126,14 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
                         text = "Edit profile",
                         textColor = Color.Black
                     ) {
-                        navController.navigate("EditProfileScreen") {
-                            popUpTo("EditProfileScreen") { inclusive = true }
+                        if (authViewModel.role == "user") {
+                            navController.navigate("EditProfileScreen") {
+                                popUpTo("ProfileScreen") { inclusive = false }
+                            }
+                        } else {
+                            navController.navigate("EditDriverScreen") {
+                                popUpTo("ProfileScreen") { inclusive = false }
+                            }
                         }
                     }
 

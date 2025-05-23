@@ -51,6 +51,15 @@ class AuthViewModel @Inject constructor(
     var userEmail by mutableStateOf("")
         private set
 
+    var plates by mutableStateOf("")
+        private set
+
+    var route by mutableStateOf("")
+        private set
+
+    var role by mutableStateOf("")
+        private set
+
     var isLoading by mutableStateOf(true)
         private set
 
@@ -146,7 +155,7 @@ class AuthViewModel @Inject constructor(
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     userName = document.getString("name") ?: "User"
-                    photoIndex = document.getString("profilePictureUrl") ?: "0"
+                    photoIndex = document.getString("photoIndex") ?: "0"
                 }
             }
             .addOnFailureListener {
@@ -164,6 +173,28 @@ class AuthViewModel @Inject constructor(
                     userEmail = document.getString("email") ?: ""
                     userName = document.getString("name") ?: ""
                     userPhone = document.getString("phone") ?: ""
+                    photoIndex = document.getString("photoIndex") ?: ""
+                    isLoading = false
+                }
+                .addOnFailureListener {
+                    isLoading = false
+                }
+        } else {
+            isLoading = false
+        }
+    }
+
+    fun loadDriverData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val uid = currentUser.uid
+            firestore.collection("drivers").document(uid).get()
+                .addOnSuccessListener { document ->
+                    userEmail = document.getString("email") ?: ""
+                    userName = document.getString("name") ?: ""
+                    userPhone = document.getString("phone") ?: ""
+                    plates = document.getString("plates") ?: ""
+                    route = document.getString("route") ?: ""
                     photoIndex = document.getString("photoIndex") ?: ""
                     isLoading = false
                 }
@@ -198,14 +229,21 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun updateUserAvatar(avatarIndex: Int, onResult: (Boolean) -> Unit) {
+    fun updateDriverData(name: String, phone: String, email: String, route: String, plates: String, onResult: (Boolean) -> Unit) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             val uid = currentUser.uid
-            firestore.collection("users").document(uid)
-                .update("photoIndex", avatarIndex.toString())
+            val updatedData = hashMapOf(
+                "name" to name,
+                "phone" to phone,
+                "email" to email,
+                "plates" to plates,
+                "route" to route
+            )
+
+            firestore.collection("drivers").document(uid)
+                .update(updatedData as Map<String, Any>)
                 .addOnSuccessListener {
-                    photoIndex = avatarIndex.toString()
                     onResult(true)
                 }
                 .addOnFailureListener {
@@ -216,16 +254,67 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun refreshUserData() {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    userName = document.getString("name") ?: "User"
-                    photoIndex = document.getString("photoIndex") ?: "0"
+    fun updateUserAvatar(avatarIndex: Int, onResult: (Boolean) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val uid = currentUser.uid
+
+            val userRef = firestore.collection("users").document(uid)
+            val driverRef = firestore.collection("drivers").document(uid)
+
+            userRef.get()
+                .addOnSuccessListener { userDoc ->
+                    if (userDoc.exists()) {
+                        // Usuario existe en 'users'
+                        userRef.update("photoIndex", avatarIndex.toString())
+                            .addOnSuccessListener {
+                                photoIndex = avatarIndex.toString()
+                                onResult(true)
+                            }
+                            .addOnFailureListener {
+                                onResult(false)
+                            }
+                    } else {
+                        // Si no está en 'users', intenta en 'drivers'
+                        driverRef.update("photoIndex", avatarIndex.toString())
+                            .addOnSuccessListener {
+                                photoIndex = avatarIndex.toString()
+                                onResult(true)
+                            }
+                            .addOnFailureListener {
+                                onResult(false)
+                            }
+                    }
+                }
+                .addOnFailureListener {
+                    onResult(false)
+                }
+        } else {
+            onResult(false)
+        }
+    }
+
+    fun refreshUserData(uid: String? = null) {
+        val userId = uid ?: auth.currentUser?.uid ?: return
+
+        val userDocRef = firestore.collection("users").document(userId)
+        userDocRef.get().addOnSuccessListener { userDoc ->
+            if (userDoc != null && userDoc.exists()) {
+                userName = userDoc.getString("name") ?: "User"
+                photoIndex = userDoc.getString("photoIndex") ?: "0"
+                role = userDoc.getString("role") ?: "user"
+            } else {
+                // Si no está en 'users', intentar en 'drivers'
+                val driverDocRef = firestore.collection("drivers").document(userId)
+                driverDocRef.get().addOnSuccessListener { driverDoc ->
+                    if (driverDoc != null && driverDoc.exists()) {
+                        userName = driverDoc.getString("name") ?: "Driver"
+                        photoIndex = driverDoc.getString("photoIndex") ?: "0"
+                        role = driverDoc.getString("role") ?: "driver"
+                    }
                 }
             }
+        }
     }
 
     //Cerrar sesión

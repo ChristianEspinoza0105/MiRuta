@@ -330,8 +330,8 @@ fun RegisterDriverScreen(
                     val trimmedPassword = password.trim()
                     val trimmedName = name.trim()
                     val trimmedPhone = phone.trim()
-                    val trimmedRoute = phone.trim()
-                    val trimmedPlates = phone.trim()
+                    val trimmedRoute = route.trim()
+                    val trimmedPlates = plates.trim()
 
                     when {
                         trimmedName.isEmpty() -> context?.let {
@@ -346,6 +346,14 @@ fun RegisterDriverScreen(
 
                         !isValidEmail(trimmedEmail) -> context?.let {
                             Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
+                        }
+
+                        trimmedRoute.isEmpty() -> context?.let {
+                            Toast.makeText(it, "Ruta requerida", Toast.LENGTH_SHORT).show()
+                        }
+
+                        trimmedPlates.isEmpty() -> context?.let {
+                            Toast.makeText(it, "Placas requeridas", Toast.LENGTH_SHORT).show()
                         }
 
                         trimmedPassword.length < 6 -> context?.let {

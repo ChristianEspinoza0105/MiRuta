@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.miruta.ui.screens.ChatScreen
 import com.example.miruta.ui.screens.CommunityScreen
+import com.example.miruta.ui.screens.EditDriverScreen
 import com.example.miruta.ui.screens.EditProfileScreen
 import com.example.miruta.ui.screens.ExploreScreen
 import com.example.miruta.ui.screens.LinesScreen
@@ -61,6 +62,10 @@ fun BottomNavGraph(
 
             composable("SelectImageScreen") {
                 SelectImageScreen(navController)
+            }
+
+            composable(route = "EditDriverScreen") {
+                EditDriverScreen(navController = navController)
             }
 
             composable(
