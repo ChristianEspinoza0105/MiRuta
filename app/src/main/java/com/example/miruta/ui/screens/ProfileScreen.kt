@@ -37,13 +37,13 @@ import com.example.miruta.ui.viewmodel.AuthViewModel
 
 fun getAvatarResourceByIndex(index: Int): Int {
     return when (index) {
-        0 -> R.drawable.avatar_placeholder_1
-        1 -> R.drawable.avatar_placeholder_2
-        2 -> R.drawable.avatar_placeholder_3
-        3 -> R.drawable.avatar_placeholder_4
-        4 -> R.drawable.avatar_placeholder_5
-        5 -> R.drawable.avatar_placeholder_6
-        else -> R.drawable.avatar_placeholder_1
+        0 -> R.drawable.bus_verde_cono
+        1 -> R.drawable.bus_verde_cachucha
+        2 -> R.drawable.bus_blanco_copa
+        3 -> R.drawable.bus_blanco_vaquero
+        4 -> R.drawable.bus_rojo_ushanka
+        5 -> R.drawable.bus_rojo_boina
+        else -> R.drawable.bus_verde_cono
     }
 }
 
