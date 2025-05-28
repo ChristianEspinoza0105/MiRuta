@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                         currentRoute?.startsWith("live_location_map/") == false
 
 
+
                 Scaffold(
                     bottomBar = {
                         if (showBottomBar) {
