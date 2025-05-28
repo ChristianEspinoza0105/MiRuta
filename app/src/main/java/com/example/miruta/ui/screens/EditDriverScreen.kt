@@ -43,25 +43,21 @@ import com.example.miruta.ui.viewmodel.AuthViewModel
 
 
 private val avatarResources = listOf(
-    R.drawable.avatar_placeholder_1,
-    R.drawable.avatar_placeholder_2,
-    R.drawable.avatar_placeholder_3,
-    R.drawable.avatar_placeholder_4,
-    R.drawable.avatar_placeholder_5,
-    R.drawable.avatar_placeholder_6,
-    R.drawable.avatar_placeholder_7,
-    R.drawable.avatar_placeholder_8,
-    R.drawable.avatar_placeholder_9,
-    R.drawable.avatar_placeholder_10
+    R.drawable.bus_verde_cono,
+    R.drawable.bus_verde_cachucha,
+    R.drawable.bus_blanco_copa,
+    R.drawable.bus_blanco_vaquero,
+    R.drawable.bus_rojo_ushanka,
+    R.drawable.bus_rojo_boina
 )
 
 private fun getAvatarResource(index: Int): Int {
-    return avatarResources.getOrElse(index) { R.drawable.avatar_placeholder_1 }
+    return avatarResources.getOrElse(index) { R.drawable.bus_verde_cono }
 }
 
 @Composable
 fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
-    val selectedImage = remember { mutableStateOf(R.drawable.avatar_placeholder_1) }
+    val selectedImage = remember { mutableStateOf(R.drawable.bus_verde_cono) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
