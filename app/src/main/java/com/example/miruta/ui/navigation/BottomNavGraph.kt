@@ -26,6 +26,7 @@ import com.example.miruta.ui.screens.SelectImageScreen
 import com.example.miruta.ui.screens.RegisterDriverScreen
 import com.example.miruta.ui.screens.RegisterScreen
 import com.example.miruta.ui.viewmodel.AuthViewModel
+import com.example.miruta.ui.screens.RecoverPasswordScreen
 
 @Composable
 fun BottomNavGraph(
@@ -62,6 +63,10 @@ fun BottomNavGraph(
 
             composable("SelectImageScreen") {
                 SelectImageScreen(navController)
+            }
+
+            composable("RecoverPasswordScreen") {
+                RecoverPasswordScreen(navController)
             }
 
             composable(route = "EditDriverScreen") {

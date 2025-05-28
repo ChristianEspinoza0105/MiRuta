@@ -211,6 +211,9 @@ fun LoginScreen(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(top = 20.dp)
+                        .clickable {
+                            navController.navigate("RecoverPasswordScreen")
+                        }
                 )
 
                 Button(
