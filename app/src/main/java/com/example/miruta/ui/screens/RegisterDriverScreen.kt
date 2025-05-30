@@ -90,7 +90,7 @@ fun RegisterDriverScreen(
                     end.linkTo(parent.end)
                 }
                 .fillMaxWidth()
-                .height(175.dp)
+                .fillMaxHeight(1f)
                 .background(Color(0xFF00933B))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -135,7 +135,7 @@ fun RegisterDriverScreen(
                     end.linkTo(parent.end)
                     bottom.linkTo(parent.bottom)
                 }
-                .fillMaxHeight()
+                .fillMaxHeight(1f)
                 .background(
                     color = Color.White,
                     shape = RoundedCornerShape(16.dp)

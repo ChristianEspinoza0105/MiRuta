@@ -314,6 +314,21 @@ authViewModel: AuthViewModel = hiltViewModel()
                         }
                 )
 
+                Text(
+                    text = "Already have an account? Login here!",
+                    color = Color.DarkGray,
+                    style = TextStyle(
+                        fontFamily = AppTypography.body1.fontFamily,
+                        fontWeight = AppTypography.body1.fontWeight,
+                        fontSize = subtitleFontSize
+                    ),
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .clickable {
+                            navController.navigate("LoginScreen")
+                        }
+                )
+
             }
         }
         val configuration = LocalConfiguration.current
