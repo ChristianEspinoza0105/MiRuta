@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -136,7 +137,8 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
     val coroutineScope = rememberCoroutineScope()
 
-    var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var selectedItineraryIndex by remember { mutableStateOf(0) }
+    var routePoints by remember { mutableStateOf<Map<Int, List<LatLng>>>(emptyMap()) }
 
     val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
 
@@ -186,6 +188,25 @@ fun ExploreScreen(navController: NavHostController? = null) {
         }
     }
 
+    fun updateCameraForSelectedItinerary(itinerary: Itinerary?) {
+        itinerary?.let {
+            val bounds = LatLngBounds.builder()
+            it.legs?.forEach { leg ->
+                leg.legGeometry?.points?.let { encoded ->
+                    decodePolyline(encoded).forEach { point ->
+                        bounds.include(point)
+                    }
+                }
+            }
+            try {
+                cameraPositionState.move(
+                    CameraUpdateFactory.newLatLngBounds(bounds.build(), 100)
+                )
+            } catch (e: Exception) {
+            }
+        }
+    }
+
     fun getCurrentTimeAmPm(): String {
         val sdf = SimpleDateFormat("hh:mma", Locale.US)
         return sdf.format(Date()).lowercase(Locale.US)
@@ -215,14 +236,21 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
                 routePlan = response
                 sheetState.expand()
-                routePlan = response
-                val newPoints = mutableListOf<LatLng>()
-                response.plan?.itineraries?.firstOrNull()?.legs?.forEach { leg ->
-                    leg.legGeometry?.points?.let { encoded ->
-                        newPoints += decodePolyline(encoded)
+
+                // Guardar todos los itinerarios con sus puntos
+                val newPointsMap = mutableMapOf<Int, List<LatLng>>()
+                response.plan?.itineraries?.forEachIndexed { index, itinerary ->
+                    val points = mutableListOf<LatLng>()
+                    itinerary.legs?.forEach { leg ->
+                        leg.legGeometry?.points?.let { encoded ->
+                            points += decodePolyline(encoded)
+                        }
                     }
+                    newPointsMap[index] = points
                 }
-                routePoints = newPoints
+
+                routePoints = newPointsMap
+                selectedItineraryIndex = 0 // Seleccionar la primera ruta por defecto
                 sheetState.expand()
             } catch (e: Exception) {
                 errorMessage = "Error al obtener ruta: ${e.localizedMessage}"
@@ -269,7 +297,15 @@ fun ExploreScreen(navController: NavHostController? = null) {
                     .imePadding()
             ) {
                 if (routePlan != null) {
-                    RouteDetailsContent(routePlan!!)
+                    RouteDetailsContent(
+                        routePlan = routePlan!!,
+                        selectedItineraryIndex = selectedItineraryIndex,
+                        onItinerarySelected = { index ->
+                            selectedItineraryIndex = index
+                            // Opcional: ajustar la cámara para la ruta seleccionada
+                            updateCameraForSelectedItinerary(routePlan!!.plan?.itineraries?.get(index))
+                        }
+                    )
                 } else {
                     Box(
                         modifier = Modifier
@@ -310,12 +346,13 @@ fun ExploreScreen(navController: NavHostController? = null) {
                         icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
                     )
                 }
-                if (routePoints.isNotEmpty()) {
-                    routePlan?.plan?.itineraries?.firstOrNull()?.legs?.forEach { leg ->
+
+                routePoints[selectedItineraryIndex]?.let { points ->
+                    routePlan?.plan?.itineraries?.get(selectedItineraryIndex)?.legs?.forEach { leg ->
                         leg.legGeometry?.points?.let { encoded ->
-                            val points = decodePolyline(encoded)
+                            val decodedPoints = decodePolyline(encoded)
                             Polyline(
-                                points = points,
+                                points = decodedPoints,
                                 color = if (leg.mode == "WALK") Color.Gray else parseRouteColor(leg.routeColor),
                                 width = 20f,
                                 pattern = if (leg.mode == "WALK") listOf(Dot(), Gap(20f)) else null,
@@ -525,7 +562,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                         suggestions = emptyList()
                                         destinoSuggestions = emptyList()
                                         routePlan = null
-                                        routePoints = emptyList()
+                                        routePoints = emptyMap()
                                         updateCameraPosition(userLocation, null)
                                     },
                                     modifier = Modifier
@@ -537,7 +574,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
-
                             }
                         }
                 }
@@ -705,7 +741,11 @@ fun decodePolyline(encoded: String): List<LatLng> {
 }
 
 @Composable
-private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
+private fun RouteDetailsContent(
+    routePlan: RoutePlanResponse,
+    selectedItineraryIndex: Int,
+    onItinerarySelected: (Int) -> Unit) {
+
     val scrollState = rememberScrollState()
     var expandedRoute by remember { mutableStateOf(-1) }
 
@@ -751,8 +791,10 @@ private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
                         itinerary = itinerary,
                         index = index,
                         expanded = expandedRoute == index,
+                        isSelected = index == selectedItineraryIndex,
                         onClick = {
                             expandedRoute = if (expandedRoute == index) -1 else index
+                            onItinerarySelected(index)
                         },
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -804,6 +846,7 @@ private fun RouteSummaryCard(
     itinerary: Itinerary,
     index: Int,
     expanded: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -813,14 +856,21 @@ private fun RouteSummaryCard(
         ?.let { parseRouteColor(it) }
         ?: Color(0xFFCCCCCC)
 
+    val backgroundColor = if (isSelected) {
+        baseRouteColor.copy(alpha = 0.3f)
+    } else {
+        baseRouteColor.copy(alpha = 0.1f)
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = baseRouteColor.copy(alpha = 0.1f)
+            containerColor = backgroundColor
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        border = if (isSelected) BorderStroke(2.dp, baseRouteColor) else null
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
