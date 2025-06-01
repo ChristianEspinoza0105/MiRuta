@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -95,6 +97,14 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import com.example.miruta.data.models.Itinerary
 import androidx.compose.material3.SheetValue
+import androidx.compose.ui.text.TextStyle
+import com.example.miruta.ui.theme.AppTypography
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.shadow
+import com.google.android.gms.maps.model.Dot
+import com.google.android.gms.maps.model.Gap
+import com.google.android.gms.maps.model.JointType
+import com.google.android.gms.maps.model.RoundCap
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -184,7 +194,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
     fun fetchRoutePlan(
         from: LatLng,
         to: LatLng,
-        date: String = "2024-06-10",
+        date: String = "2025-06-10",
         time: String? = null
     ) {
         isLoadingRoute = true
@@ -249,286 +259,365 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
     BottomSheetScaffold(
         scaffoldState = bottomSheetScaffoldState,
-        sheetPeekHeight = 64.dp,
+        sheetPeekHeight = 160.dp,
         sheetContent = {
-            if (routePlan != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .imePadding()
-                ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .navigationBarsPadding()
+                    .imePadding()
+            ) {
+                if (routePlan != null) {
                     RouteDetailsContent(routePlan!!)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Busca una ruta para ver los detalles aquí.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
                 }
-            } else {
-                Spacer(modifier = Modifier.height(1.dp))
             }
         }
     ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = true),
-            uiSettings = MapUiSettings(myLocationButtonEnabled = false)
-        ) {
-            origenLatLng?.let {
-                Marker(
-                    state = MarkerState(position = it),
-                    title = "Origen",
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
-                )
-            }
-            destinoLatLng?.let {
-                Marker(
-                    state = MarkerState(position = it),
-                    title = "Destino",
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
-                )
-            }
-            if (routePoints.isNotEmpty()) {
-                routePlan?.plan?.itineraries?.firstOrNull()?.legs?.forEach { leg ->
-                    leg.legGeometry?.points?.let { encoded ->
-                        val points = decodePolyline(encoded)
-                        Polyline(
-                            points = points,
-                            color = parseRouteColor(leg.routeColor),
-                            width = 8f
-                        )
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(isMyLocationEnabled = true),
+                uiSettings = MapUiSettings(myLocationButtonEnabled = false)
+            ) {
+                origenLatLng?.let {
+                    Marker(
+                        state = MarkerState(position = it),
+                        title = "Origen",
+                        icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                    )
+                }
+                destinoLatLng?.let {
+                    Marker(
+                        state = MarkerState(position = it),
+                        title = "Destino",
+                        icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                    )
+                }
+                if (routePoints.isNotEmpty()) {
+                    routePlan?.plan?.itineraries?.firstOrNull()?.legs?.forEach { leg ->
+                        leg.legGeometry?.points?.let { encoded ->
+                            val points = decodePolyline(encoded)
+                            Polyline(
+                                points = points,
+                                color = if (leg.mode == "WALK") Color.Gray else parseRouteColor(leg.routeColor),
+                                width = 20f,
+                                pattern = if (leg.mode == "WALK") listOf(Dot(), Gap(20f)) else null,
+                                startCap = RoundCap(),
+                                endCap = RoundCap(),
+                                jointType = JointType.ROUND
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        val showOverlay = isOrigenFocused || isDestinoFocused
+            val showOverlay = isOrigenFocused || isDestinoFocused
 
-        if (showOverlay) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-            )
-        }
+            if (showOverlay) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White)
+                )
+            }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = origen,
-                onValueChange = { query ->
-                    origen = query
-                    if (query.isBlank()) {
-                        origenLatLng = null
-                        suggestions = emptyList()
-                        updateCameraPosition(origenLatLng, destinoLatLng)
-                    } else {
-                        val request = FindAutocompletePredictionsRequest.builder()
-                            .setQuery(query)
-                            .setLocationBias(
-                                RectangularBounds.newInstance(
-                                    LatLngBounds.builder().include(defaultLocation).build()
-                                )
-                            )
-                            .build()
-
-                        placesClient.findAutocompletePredictions(request)
-                            .addOnSuccessListener { response ->
-                                suggestions = response.autocompletePredictions
-                            }
-                            .addOnFailureListener {
-                                suggestions = emptyList()
-                            }
-                    }
-                },
-                placeholder = { Text("Buscar origen", color = Color.Gray, fontSize = 16.sp) },
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
-                    .onFocusChanged { isOrigenFocused = it.isFocused },
-                shape = RoundedCornerShape(35.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedIndicatorColor = Color(0xFF00933B),
-                    unfocusedIndicatorColor = Color(0xFFE7E7E7)
-                ),
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = if (isOrigenFocused) R.drawable.ic_back else R.drawable.ic_app),
-                        contentDescription = "Icono origen",
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                if (routePlan == null) {
+                    OutlinedTextField(
+                        value = origen,
+                        onValueChange = { query ->
+                            origen = query
+                            if (query.isBlank()) {
+                                origenLatLng = null
+                                suggestions = emptyList()
+                                updateCameraPosition(origenLatLng, destinoLatLng)
+                            } else {
+                                val request = FindAutocompletePredictionsRequest.builder()
+                                    .setQuery(query)
+                                    .setLocationBias(
+                                        RectangularBounds.newInstance(
+                                            LatLngBounds.builder().include(defaultLocation).build()
+                                        )
+                                    )
+                                    .build()
+
+                                placesClient.findAutocompletePredictions(request)
+                                    .addOnSuccessListener { response ->
+                                        suggestions = response.autocompletePredictions
+                                    }
+                                    .addOnFailureListener {
+                                        suggestions = emptyList()
+                                    }
+                            }
+                        },
+                        placeholder = {
+                            Text(
+                                "Buscar origen",
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                        },
                         modifier = Modifier
-                            .padding(8.dp)
-                            .size(24.dp)
-                            .clickable {
-                                if (isOrigenFocused) {
-                                    origen = ""
-                                    origenLatLng = null
-                                    suggestions = emptyList()
-                                    focusManager.clearFocus()
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .onFocusChanged { isOrigenFocused = it.isFocused },
+                        shape = RoundedCornerShape(35.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color(0xFF00933B),
+                            unfocusedIndicatorColor = Color(0xFFE7E7E7)
+                        ),
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(id = if (isOrigenFocused) R.drawable.ic_back else R.drawable.ic_app),
+                                contentDescription = "Icono origen",
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                                    .clickable {
+                                        if (isOrigenFocused) {
+                                            origen = ""
+                                            origenLatLng = null
+                                            suggestions = emptyList()
+                                            focusManager.clearFocus()
+                                            updateCameraPosition(origenLatLng, destinoLatLng)
+                                        }
+                                    },
+                                tint = Color(0xFF00933B)
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_search),
+                                contentDescription = "Buscar",
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                            )
+                        },
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val mostrarDestino = origenLatLng != null
+
+                    if (mostrarDestino) {
+                        OutlinedTextField(
+                            value = destino,
+                            onValueChange = { query ->
+                                destino = query
+                                if (query.isBlank()) {
+                                    destinoLatLng = null
+                                    destinoSuggestions = emptyList()
                                     updateCameraPosition(origenLatLng, destinoLatLng)
+                                } else {
+                                    val request = FindAutocompletePredictionsRequest.builder()
+                                        .setQuery(query)
+                                        .setLocationBias(
+                                            RectangularBounds.newInstance(
+                                                LatLngBounds.builder().include(defaultLocation)
+                                                    .build()
+                                            )
+                                        )
+                                        .build()
+
+                                    placesClient.findAutocompletePredictions(request)
+                                        .addOnSuccessListener { response ->
+                                            destinoSuggestions = response.autocompletePredictions
+                                        }
+                                        .addOnFailureListener {
+                                            destinoSuggestions = emptyList()
+                                        }
                                 }
                             },
-                        tint = Color(0xFF00933B)
-                    )
-                },
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_search),
-                        contentDescription = "Buscar",
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .size(24.dp)
-                    )
-                },
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val mostrarDestino = origenLatLng != null
-
-            if (mostrarDestino) {
-                OutlinedTextField(
-                    value = destino,
-                    onValueChange = { query ->
-                        destino = query
-                        if (query.isBlank()) {
-                            destinoLatLng = null
-                            destinoSuggestions = emptyList()
-                            updateCameraPosition(origenLatLng, destinoLatLng)
-                        } else {
-                            val request = FindAutocompletePredictionsRequest.builder()
-                                .setQuery(query)
-                                .setLocationBias(
-                                    RectangularBounds.newInstance(
-                                        LatLngBounds.builder().include(defaultLocation).build()
-                                    )
+                            placeholder = {
+                                Text(
+                                    "Buscar destino",
+                                    color = Color.Gray,
+                                    fontSize = 16.sp
                                 )
-                                .build()
-
-                            placesClient.findAutocompletePredictions(request)
-                                .addOnSuccessListener { response ->
-                                    destinoSuggestions = response.autocompletePredictions
-                                }
-                                .addOnFailureListener {
-                                    destinoSuggestions = emptyList()
-                                }
-                        }
-                    },
-                    placeholder = {
-                        Text(
-                            "Buscar destino",
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .onFocusChanged { isDestinoFocused = it.isFocused },
-                    shape = RoundedCornerShape(35.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedIndicatorColor = Color(0xFF00933B),
-                        unfocusedIndicatorColor = Color(0xFFE7E7E7)
-                    ),
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_myroute_selected),
-                            contentDescription = "Icono destino",
+                            },
                             modifier = Modifier
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .clickable {
-                                    if (isDestinoFocused) {
-                                        destino = ""
-                                        destinoLatLng = null
-                                        destinoSuggestions = emptyList()
-                                        focusManager.clearFocus()
-                                        updateCameraPosition(origenLatLng, destinoLatLng)
-                                    }
-                                },
-                            tint = Color(0xFF00933B)
-                        )
-                    },
-                    trailingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_search),
-                            contentDescription = "Buscar",
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .size(24.dp)
-                        )
-                    },
-                    singleLine = true
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (suggestions.isNotEmpty() || destinoSuggestions.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .padding(horizontal = 8.dp)
-                ) {
-                    suggestions.forEach { prediction ->
-                        SuggestionItem(
-                            fullText = prediction.getFullText(null).toString(),
-                            onClick = {
-                                origen = prediction.getFullText(null).toString()
-                                suggestions = emptyList()
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-
-                                coroutineScope.launch {
-                                    fetchPlaceLatLng(context, prediction.placeId)?.let {
-                                        origenLatLng = it
-                                        updateCameraPosition(origenLatLng, destinoLatLng)
-                                    }
-                                }
-                            }
-                        )
-                    }
-                    destinoSuggestions.forEach { prediction ->
-                        SuggestionItem(
-                            fullText = prediction.getFullText(null).toString(),
-                            onClick = {
-                                destino = prediction.getFullText(null).toString()
-                                destinoSuggestions = emptyList()
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-
-                                coroutineScope.launch {
-                                    fetchPlaceLatLng(context, prediction.placeId)?.let {
-                                        destinoLatLng = it
-                                        updateCameraPosition(origenLatLng, destinoLatLng)
-                                    }
-                                }
-                            }
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .onFocusChanged { isDestinoFocused = it.isFocused },
+                            shape = RoundedCornerShape(35.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedIndicatorColor = Color(0xFF00933B),
+                                unfocusedIndicatorColor = Color(0xFFE7E7E7)
+                            ),
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_myroute_selected),
+                                    contentDescription = "Icono destino",
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .size(24.dp)
+                                        .clickable {
+                                            if (isDestinoFocused) {
+                                                destino = ""
+                                                destinoLatLng = null
+                                                destinoSuggestions = emptyList()
+                                                focusManager.clearFocus()
+                                                updateCameraPosition(origenLatLng, destinoLatLng)
+                                            }
+                                        },
+                                    tint = Color(0xFF00933B)
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_search),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .size(24.dp)
+                                )
+                            },
+                            singleLine = true
                         )
                     }
                 }
+
+                else {
+                        Column(
+                            horizontalAlignment = Alignment.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+                                    .background(color = Color.White, shape = CircleShape)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        origen = ""
+                                        destino = ""
+                                        origenLatLng = null
+                                        destinoLatLng = null
+                                        suggestions = emptyList()
+                                        destinoSuggestions = emptyList()
+                                        routePlan = null
+                                        routePoints = emptyList()
+                                        updateCameraPosition(userLocation, null)
+                                    },
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_back),
+                                        contentDescription = "Regresar",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                            }
+                        }
+                }
+
+                if (suggestions.isNotEmpty() || destinoSuggestions.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White)
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        suggestions.forEach { prediction ->
+                            SuggestionItem(
+                                fullText = prediction.getFullText(null).toString(),
+                                onClick = {
+                                    origen = prediction.getFullText(null).toString()
+                                    suggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+
+                                    coroutineScope.launch {
+                                        fetchPlaceLatLng(context, prediction.placeId)?.let {
+                                            origenLatLng = it
+                                            updateCameraPosition(
+                                                origenLatLng,
+                                                destinoLatLng
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                        destinoSuggestions.forEach { prediction ->
+                            SuggestionItem(
+                                fullText = prediction.getFullText(null).toString(),
+                                onClick = {
+                                    destino = prediction.getFullText(null).toString()
+                                    destinoSuggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+
+                                    coroutineScope.launch {
+                                        fetchPlaceLatLng(context, prediction.placeId)?.let {
+                                            destinoLatLng = it
+                                            updateCameraPosition(
+                                                origenLatLng,
+                                                destinoLatLng
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (isLoadingRoute) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                errorMessage?.let {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = it,
+                            color = Color.Red
+                        )
+                    }
+
+                }
             }
-        }
-
-        if (isLoadingRoute) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
-
-        errorMessage?.let {
-            Text(
-                text = it,
-                color = Color.Red,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-
         }
     }
 }
@@ -584,30 +673,34 @@ fun decodePolyline(encoded: String): List<LatLng> {
     var lng = 0
 
     while (index < len) {
-        var b: Int
-        var shift = 0
         var result = 0
+        var shift = 0
+        var b: Int
+
         do {
             b = encoded[index++].code - 63
-            result = result or (b and 0x1f shl shift)
+            result = result or ((b and 0x1f) shl shift)
             shift += 5
         } while (b >= 0x20)
-        val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+
+        val dlat = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
         lat += dlat
 
-        shift = 0
         result = 0
+        shift = 0
+
         do {
             b = encoded[index++].code - 63
-            result = result or (b and 0x1f shl shift)
+            result = result or ((b and 0x1f) shl shift)
             shift += 5
         } while (b >= 0x20)
-        val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+
+        val dlng = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
         lng += dlng
 
-        val point = LatLng(lat / 1E5, lng / 1E5)
-        poly.add(point)
+        poly.add(LatLng(lat / 1E5, lng / 1E5))
     }
+
     return poly
 }
 
@@ -619,7 +712,7 @@ private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 8.dp)
             .verticalScroll(scrollState)
     ) {
         Row(
@@ -628,27 +721,32 @@ private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Rutas Disponibles",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = "Suggested Routes:",
+                fontSize = 20.sp,
+                color = Color.Black,
+                style = TextStyle(
+                    fontFamily = AppTypography.h1.fontFamily,
+                    fontWeight = AppTypography.h1.fontWeight,
+                ),
+                modifier = Modifier
+                    .padding(horizontal = 5.dp, vertical = 5.dp)
             )
 
-            IconButton(
-                onClick = {  },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Cerrar")
-            }
         }
 
+        Divider(
+            color = Color(0xFFE0E0E0),
+            thickness = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         routePlan.plan?.itineraries?.let { itineraries ->
-            val filteredRoutes = filterTopRoutes(itineraries)
-            if (filteredRoutes.isEmpty()) {
+            val sortedRoutes = sortRoutesByDuration(itineraries)
+            if (sortedRoutes.isEmpty()) {
                 EmptyRouteContent()
             } else {
-                filteredRoutes.forEachIndexed { index, itinerary ->
+                sortedRoutes.forEachIndexed { index, itinerary ->
                     RouteSummaryCard(
                         itinerary = itinerary,
                         index = index,
@@ -660,7 +758,7 @@ private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
                     )
                 }
                 if (expandedRoute != -1) {
-                    val itinerary = filteredRoutes[expandedRoute]
+                    val itinerary = sortedRoutes[expandedRoute]
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -684,11 +782,12 @@ private fun RouteDetailsContent(routePlan: RoutePlanResponse) {
     }
 }
 
-fun filterTopRoutes(itineraries: List<Itinerary>): List<Itinerary> {
+fun sortRoutesByDuration(itineraries: List<Itinerary>): List<Itinerary> {
     val seen = mutableSetOf<String>()
 
     val uniqueItineraries = itineraries.filter { itinerary ->
-        val key = (itinerary.duration ?: 0).toString() + "_" + (itinerary.legs?.map { it.route ?: "" }?.joinToString("-") ?: "")
+        val key = (itinerary.duration ?: 0).toString() + "_" +
+                (itinerary.legs?.map { it.route ?: "" }?.joinToString("-") ?: "")
         if (seen.contains(key)) {
             false
         } else {
@@ -697,7 +796,7 @@ fun filterTopRoutes(itineraries: List<Itinerary>): List<Itinerary> {
         }
     }
 
-    return uniqueItineraries.sortedBy { it.duration ?: Int.MAX_VALUE }.take(5)
+    return uniqueItineraries.sortedBy { it.duration ?: Int.MAX_VALUE }
 }
 
 @Composable
@@ -926,13 +1025,12 @@ private fun EmptyRouteContent() {
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_exit),
-            contentDescription = "Sin rutas",
+            contentDescription = "No service outside GDL metro area.",
             modifier = Modifier.size(48.dp),
-            tint = Color(0xFFFFA000)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No se encontraron rutas disponibles",
+            text = "No service outside GDL metro area.",
             fontSize = 16.sp,
             color = Color.Gray,
             fontWeight = FontWeight.Medium
@@ -1010,6 +1108,6 @@ fun parseRouteColor(routeColor: String?): Color {
     return try {
         Color(android.graphics.Color.parseColor("#${routeColor ?: "000000"}"))
     } catch (e: Exception) {
-        Color.Black
+        Color.Gray
     }
 }
