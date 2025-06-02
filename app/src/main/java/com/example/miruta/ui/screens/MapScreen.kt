@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -153,8 +154,8 @@ fun MapScreen(
                             text = routeShortName,
                             color = Color.White,
                             style = TextStyle(
-                                fontFamily = AppTypography.h2.fontFamily,
-                                fontWeight = AppTypography.h2.fontWeight,
+                                fontFamily = AppTypography.headlineMedium.fontFamily,
+                                fontWeight = AppTypography.headlineMedium.fontWeight,
                                 fontSize = 34.sp
                             ),
                         )

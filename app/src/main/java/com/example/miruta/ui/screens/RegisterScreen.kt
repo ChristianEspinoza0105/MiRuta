@@ -84,8 +84,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Hello",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.h1.fontFamily,
-                        fontWeight = AppTypography.h1.fontWeight,
+                        fontFamily = AppTypography.headlineLarge.fontFamily,
+                        fontWeight = AppTypography.headlineLarge.fontWeight,
                         fontSize = titleFontSize
                     ),
                     modifier = Modifier
@@ -96,8 +96,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Always on route. Sign up.",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier
@@ -126,8 +126,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Sign up",
                     color = Color(0xFF00933B),
                     style = TextStyle(
-                        fontFamily = AppTypography.h2.fontFamily,
-                        fontWeight = AppTypography.h2.fontWeight,
+                        fontFamily = AppTypography.headlineMedium.fontFamily,
+                        fontWeight = AppTypography.headlineMedium.fontWeight,
                         fontSize = 48.sp
                     ),
                     modifier = Modifier
@@ -272,11 +272,7 @@ authViewModel: AuthViewModel = hiltViewModel()
                     Text(
                         text = "Sign up",
                         color = Color.White,
-                        style = TextStyle(
-                            fontFamily = AppTypography.button.fontFamily,
-                            fontWeight = AppTypography.button.fontWeight,
-                            fontSize = 24.sp
-                        )
+                        style = AppTypography.titleMedium.copy(fontSize = 24.sp)
                     )
                 }
 
@@ -303,8 +299,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Driver? Register here and track your routes in real-time!",
                     color = Color.DarkGray,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier
@@ -318,8 +314,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Already have an account? Login here!",
                     color = Color.DarkGray,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier

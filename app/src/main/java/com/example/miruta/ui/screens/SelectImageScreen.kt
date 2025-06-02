@@ -10,10 +10,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
@@ -160,11 +160,7 @@ fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel
         ) {
             androidx.compose.material3.Text(
                 "Save",
-                style = TextStyle(
-                    fontFamily = AppTypography.button.fontFamily,
-                    fontWeight = AppTypography.button.fontWeight,
-                    fontSize = 24.sp
-                ),
+                style = AppTypography.titleMedium.copy(fontSize = 24.sp),
                 color = Color.White
             )
         }

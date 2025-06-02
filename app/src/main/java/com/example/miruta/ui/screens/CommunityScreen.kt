@@ -6,6 +6,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,10 +70,11 @@ fun CommunityScreen(navController: NavController) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(35.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = Color.White,
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF00933B),
-                    unfocusedBorderColor = Color(0xFFE7E7E7)
+                    unfocusedBorderColor = Color(0xFFE7E7E7),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 ),
                 leadingIcon = {
                     Icon(
@@ -98,8 +105,8 @@ fun CommunityScreen(navController: NavController) {
             fontSize = 28.sp,
             color = Color.Black,
             style = TextStyle(
-                fontFamily = AppTypography.h1.fontFamily,
-                fontWeight = AppTypography.h1.fontWeight
+                fontFamily = AppTypography.headlineLarge.fontFamily,
+                fontWeight = AppTypography.headlineLarge.fontWeight
             ),
             modifier = Modifier.padding(horizontal = 30.dp, vertical = 8.dp)
         )

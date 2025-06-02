@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
@@ -38,12 +37,11 @@ import android.Manifest
 import android.content.Context
 import android.location.Geocoder
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.IconButton
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.setValue
@@ -53,11 +51,18 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.miruta.data.gtfs.parseRoutesFromGTFS
+import com.example.miruta.data.models.FavoriteLocation
+import com.example.miruta.data.models.FavoriteRoute
 import com.example.miruta.data.models.Route
+import com.example.miruta.data.models.Routine
+import com.example.miruta.data.models.RoutineStop
+import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.components.FavoriteRouteCard
+import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.util.parseRouteColor
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -80,6 +85,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -291,13 +297,19 @@ fun MyRouteScreen(navController: NavHostController) {
 fun CurrentLocationBottomSheetContent(
     onDismiss: () -> Unit,
     onCurrentLocationButtonClick: () -> Unit,
-    onCloseAllSheets: () -> Unit
+    onCloseAllSheets: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
+
+    val coroutineScope = rememberCoroutineScope()
+    var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var address by remember { mutableStateOf("") }
     val context = LocalContext.current
     var suggestions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
     val defaultLocation = LatLng(20.659699, -103.349609)
     val placesClient = remember { PlacesClientProvider.getClient(context) }
+    var favoriteName by remember { mutableStateOf("") }
+    var isFavorite by remember {mutableStateOf(false)}
 
     Column(
         modifier = Modifier
@@ -349,7 +361,7 @@ fun CurrentLocationBottomSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.Start
         ) {
-            var favoriteName by remember { mutableStateOf("") }
+
             TextField(
                 value = favoriteName,
                 onValueChange = { favoriteName = it },
@@ -439,10 +451,38 @@ fun CurrentLocationBottomSheetContent(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                var isFavorite by remember { mutableStateOf(false) }
+
+
                 IconButton(
-                    onClick = { isFavorite = !isFavorite },
-                    modifier = Modifier.size(48.dp)
+                    onClick = {
+                        if (favoriteName.isNotEmpty() && address.isNotEmpty()) {
+                            // Solo activa el efecto visual si no estamos ya en proceso
+                            if (!isFavorite) { // Evita múltiples clicks durante el reset
+                                isFavorite = true // Cambia a amarillo
+
+                                val location = FavoriteLocation(
+                                    name = favoriteName,
+                                    address = address,
+                                    latitude = userLocation?.latitude ?: 0.0,
+                                    longitude = userLocation?.longitude ?: 0.0,
+                                    isFavorite = true
+                                )
+                                viewModel.addFavoriteLocation(location)
+
+                                // Lanza la corrutina usando el coroutineScope
+                                coroutineScope.launch {
+                                    delay(500) // Medio segundo de retraso
+                                    favoriteName = "" // Resetea el nombre
+                                    address = ""      // Resetea la dirección
+                                    isFavorite = false // Vuelve a gris
+                                    onCloseAllSheets()
+                                }
+                            }
+                        } else {
+                            Toast.makeText(context, "Please fill all the spaces", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    //quizas un modifier aqui
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
@@ -485,7 +525,10 @@ fun CurrentLocationBottomSheetContent(
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
+fun RoutineBottomSheetContent(
+    onDismiss: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
     //Variables del Dialog
     var showDialog by remember { mutableStateOf(false) }
     var selectedStopIndex by remember { mutableStateOf(-1) }
@@ -497,6 +540,7 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
     //Variables de LazyColumn
     val initialStops = List(6) { "" }
     var stops by remember { mutableStateOf(initialStops) }
+    var routineName by remember { mutableStateOf("") }
 
     //Variables para el mapa
     val context = LocalContext.current
@@ -687,10 +731,10 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            var text by remember { mutableStateOf("") }
+
             TextField(
-                value = text,
-                onValueChange = { text = it },
+                value = routineName,
+                onValueChange = { routineName = it },
                 label = { Text("Add routine name") },
                 modifier = Modifier
                     .shadow(
@@ -803,12 +847,31 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.align(alignment = Alignment.CenterHorizontally)) {
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    if (routineName.isNotEmpty() && stops.any { it.isNotEmpty() }) {
+                        val routine = Routine(
+                            name = routineName,
+                            stops = stops.filter { it.isNotEmpty() }.map { stopText ->
+
+                                RoutineStop(
+                                    locationName = stopText,
+                                    time = "00:00",
+                                    latitude = 0.0,
+                                    longitude = 0.0
+                                )
+                            },
+                            userId = viewModel.auth.currentUser?.uid ?: ""
+                        )
+                        viewModel.addRoutine(routine)
+                        onDismiss()
+                    }
+                },
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                 modifier = Modifier
                     .height(66.dp)
-                    .width(204.dp)
+                    .width(204.dp),
+
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -974,7 +1037,12 @@ fun FavoriteBottomSheetContent(
 }
 
 @Composable
-fun RouteSearchBottomSheetContent(onDismiss: () -> Unit, navController: NavController) {
+fun RouteSearchBottomSheetContent(
+    onDismiss: () -> Unit,
+    navController: NavController,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -1037,7 +1105,6 @@ fun RouteSearchBottomSheetContent(onDismiss: () -> Unit, navController: NavContr
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        var text by remember { mutableStateOf("") }
         TextField(
             value = searchQuery,
             onValueChange = { query -> searchQuery = query },
@@ -1073,7 +1140,28 @@ fun RouteSearchBottomSheetContent(onDismiss: () -> Unit, navController: NavContr
                     description = route.routeLongName,
                     color = parseRouteColor(route.routeColor),
                     icon = icon,
-                    onClick = {
+                    onFavoriteClick = {
+                        val currentUser = viewModel.auth.currentUser
+                        if (currentUser != null) {
+                            val favoriteRoute = FavoriteRoute(
+                                routeId = route.id,
+                                routeName = route.routeShortName,
+                                routeDescription = route.routeLongName,
+                                isFavorite = true
+                            )
+                            viewModel.addFavoriteRoute(favoriteRoute)
+
+
+                            searchQuery = ""
+
+
+                            coroutineScope.launch {
+                                delay(1000)
+                                onDismiss()
+                            }
+                        } else {
+                            Toast.makeText(context, "Please login to save your favorites routes", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
             }
@@ -1167,8 +1255,12 @@ fun LocationBottomSheetContent(
 fun ChooseMapBottomSheetContent(
     onDismiss: () -> Unit,
     onChooseMapButtonClick: (LatLng, String) -> Unit = { _, _ -> },
-    onCloseALlBottomSheet: () -> Unit = {}
+    onCloseALlBottomSheet: () -> Unit = {},
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    var isFavorite by remember { mutableStateOf(false) }
+    var favoriteName by remember { mutableStateOf("") }
     val context = LocalContext.current
     val defaultLocation = LatLng(20.659699, -103.349609)
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
@@ -1332,7 +1424,7 @@ fun ChooseMapBottomSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.Start
         ) {
-            var favoriteName by remember { mutableStateOf("") }
+
             TextField(
                 value = favoriteName,
                 onValueChange = { favoriteName = it },
@@ -1397,15 +1489,38 @@ fun ChooseMapBottomSheetContent(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            var isFavorite by remember { mutableStateOf(false) }
+
             IconButton(
                 onClick = {
-                    isFavorite = !isFavorite
                     selectedLocation?.let { latLng ->
-                        onChooseMapButtonClick(latLng, locationName)
+                        if (favoriteName.isNotEmpty() && locationName.isNotEmpty()) {
+                            isFavorite = true // Cambia a amarillo
+
+                            val favoriteLocation = FavoriteLocation(
+                                name = favoriteName,
+                                address = locationName,
+                                latitude = latLng.latitude,
+                                longitude = latLng.longitude,
+                                isFavorite = true
+                            )
+                            viewModel.addFavoriteLocation(favoriteLocation)
+
+
+                            coroutineScope.launch {
+                                delay(500)
+                                favoriteName = ""
+                                locationName = "Selecciona una ubicación en el mapa"
+                                selectedLocation = null
+                                isFavorite = false
+                                onCloseALlBottomSheet()
+                            }
+                        } else {
+                            Toast.makeText(context, "Please fill the name and choose a location", Toast.LENGTH_SHORT).show()
+                        }
+                    } ?: run {
+                        Toast.makeText(context, "Please choose a location", Toast.LENGTH_SHORT).show()
                     }
-                },
-                modifier = Modifier.size(48.dp)
+                }
             ) {
                 Icon(
                     imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,

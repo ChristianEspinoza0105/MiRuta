@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,10 +49,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.tasks.await
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,14 +86,11 @@ fun ChatScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val scaffoldState = rememberScaffoldState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val showLocationSheet = remember { mutableStateOf(false) }
 
     val density = LocalDensity.current
     val statusBarHeightPx = WindowInsets.statusBars.getTop(density)
-
     val statusBarHeightDp = with(density) { statusBarHeightPx.toDp() }
 
     var isLoading by remember { mutableStateOf(true) }
@@ -131,7 +126,6 @@ fun ChatScreen(
                 messages = updatedMessages
                 isLoading = false
             }
-
         } else {
             messages = emptyList()
             isLoading = false
@@ -148,19 +142,16 @@ fun ChatScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
             LoadingSpinner(isLoading = true)
         }
     } else {
         Scaffold(
-            scaffoldState = scaffoldState,
-            backgroundColor = Color.Transparent
+            containerColor = Color.Transparent
         ) { paddingValues ->
-
             Box(modifier = Modifier.fillMaxSize()) {
-
                 Image(
                     painter = painterResource(id = R.drawable.background_chat),
                     contentDescription = null,
@@ -173,9 +164,7 @@ fun ChatScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-
                     if (isUserLoggedIn) {
-
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -235,7 +224,7 @@ fun ChatScreen(
                                     Text(
                                         text = routeName,
                                         color = Color.White,
-                                        style = AppTypography.h2.copy(
+                                        style = AppTypography.headlineMedium.copy(
                                             fontSize = 24.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             letterSpacing = 1.sp
@@ -330,7 +319,7 @@ fun ChatScreen(
 
                                         Text(
                                             text = formattedTime,
-                                            style = AppTypography.body1.copy(
+                                            style = AppTypography.bodyLarge.copy(
                                                 fontSize = 10.sp,
                                                 color = if (isOwnMessage) Color(0xFFE0E0E0) else Color.DarkGray
                                             ),
@@ -349,7 +338,7 @@ fun ChatScreen(
                                 .padding(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TextField(
+                            OutlinedTextField(
                                 value = message,
                                 onValueChange = { message = it },
                                 placeholder = { Text("Message") },
@@ -368,8 +357,9 @@ fun ChatScreen(
                                         )
                                     }
                                 },
-                                colors = TextFieldDefaults.textFieldColors(
-                                    backgroundColor = Color.White,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent
                                 ),
@@ -408,7 +398,7 @@ fun ChatScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.White)
+                                .background(MaterialTheme.colorScheme.background)
                                 .padding(32.dp)
                         ) {
                             Column(
@@ -425,15 +415,15 @@ fun ChatScreen(
 
                                 Text(
                                     text = "Your route. Your community.",
-                                    style = AppTypography.h1.copy(fontSize = 24.sp),
-                                    color = Color.Black,
+                                    style = AppTypography.headlineLarge.copy(fontSize = 24.sp),
+                                    color = MaterialTheme.colorScheme.onBackground,
                                     textAlign = TextAlign.Center
                                 )
 
                                 Text(
                                     text = "Log in to access routes, chat with other passengers, and get real-time updates.",
-                                    style = AppTypography.body1.copy(fontSize = 18.sp),
-                                    color = Color.Gray,
+                                    style = AppTypography.bodyLarge.copy(fontSize = 18.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
                                 )
 
@@ -446,7 +436,7 @@ fun ChatScreen(
                                     },
                                     shape = RoundedCornerShape(50),
                                     colors = ButtonDefaults.buttonColors(
-                                        backgroundColor = Color(0xFF00933B),
+                                        containerColor = Color(0xFF00933B),
                                         contentColor = Color.White
                                     ),
                                     modifier = Modifier
@@ -455,14 +445,14 @@ fun ChatScreen(
                                 ) {
                                     Text(
                                         text = "Sign in",
-                                        style = AppTypography.h1.copy(fontSize = 24.sp)
+                                        style = AppTypography.headlineLarge.copy(fontSize = 24.sp)
                                     )
                                 }
 
                                 Text(
                                     text = "Back to explore more!",
-                                    style = AppTypography.body1.copy(fontSize = 16.sp),
-                                    color = Color.Gray,
+                                    style = AppTypography.bodyLarge.copy(fontSize = 16.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier
                                         .clickable {
@@ -492,7 +482,11 @@ fun ChatScreen(
 
                             ClickableText(
                                 text = annotatedText,
-                                style = AppTypography.body2.copy(fontSize = 14.sp, color = Color.Black, textAlign = TextAlign.Center),
+                                style = AppTypography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    textAlign = TextAlign.Center
+                                ),
                                 onClick = { offset ->
                                     annotatedText.getStringAnnotations(tag = "CREATE_ACCOUNT", start = offset, end = offset)
                                         .firstOrNull()?.let {
@@ -512,36 +506,36 @@ fun ChatScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-            errorMessage?.let {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 60.dp, start = 12.dp, end = 12.dp)
-                        .align(Alignment.BottomCenter)
-                        .zIndex(1f)
-                ) {
-                    ErrorMessageCard(
-                        message = "Error al enviar mensaje",
-                        reason = it,
-                        onDismiss = { errorMessage = null }
-                    )
-                }
-            }
-
-            if (showLocationSheet.value) {
-                var userLoc by remember { mutableStateOf<LatLng?>(null) }
-                val cameraState = rememberCameraPositionState()
-                LaunchedEffect(hasLocationPermission) {
-                    if (hasLocationPermission) {
-                        val fused = LocationServices.getFusedLocationProviderClient(context)
-                        val location = fused.lastLocation.await()
-                        location?.let {
-                            val latLng = LatLng(it.latitude, it.longitude)
-                            userLoc = latLng
-                            cameraState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
-                        }
+                errorMessage?.let {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 60.dp, start = 12.dp, end = 12.dp)
+                            .align(Alignment.BottomCenter)
+                            .zIndex(1f)
+                    ) {
+                        ErrorMessageCard(
+                            message = "Error al enviar mensaje",
+                            reason = it,
+                            onDismiss = { errorMessage = null }
+                        )
                     }
                 }
+
+                if (showLocationSheet.value) {
+                    var userLoc by remember { mutableStateOf<LatLng?>(null) }
+                    val cameraState = rememberCameraPositionState()
+                    LaunchedEffect(hasLocationPermission) {
+                        if (hasLocationPermission) {
+                            val fused = LocationServices.getFusedLocationProviderClient(context)
+                            val location = fused.lastLocation.await()
+                            location?.let {
+                                val latLng = LatLng(it.latitude, it.longitude)
+                                userLoc = latLng
+                                cameraState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+                            }
+                        }
+                    }
 
                     ModalBottomSheet(
                         onDismissRequest = { showLocationSheet.value = false },
@@ -579,12 +573,11 @@ fun ChatScreen(
 
                                 Text(
                                     text = "Share location",
-                                    style = AppTypography.h1,
+                                    style = AppTypography.headlineLarge,
                                     fontSize = 22.sp,
                                 )
 
                                 Spacer(modifier = Modifier.weight(1f))
-
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -623,12 +616,14 @@ fun ChatScreen(
                                         .fillMaxWidth()
                                         .height(52.dp),
                                     shape = RoundedCornerShape(30.dp),
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF00933B),
+                                        contentColor = Color.White
+                                    )
                                 ) {
                                     Text(
                                         "Share your current location",
-                                        color = Color.White,
-                                        style = AppTypography.h2,
+                                        style = AppTypography.headlineMedium,
                                         fontSize = 18.sp
                                     )
                                 }
@@ -658,12 +653,14 @@ fun ChatScreen(
                                         .fillMaxWidth()
                                         .height(52.dp),
                                     shape = RoundedCornerShape(30.dp),
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF00933B),
+                                        contentColor = Color.White
+                                    )
                                 ) {
                                     Text(
                                         "Share your live location",
-                                        color = Color.White,
-                                        style = AppTypography.h2,
+                                        style = AppTypography.headlineMedium,
                                         fontSize = 18.sp
                                     )
                                 }

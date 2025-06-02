@@ -3,6 +3,9 @@ package com.example.miruta.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -97,12 +100,12 @@ fun LiveLocationMapScreen(
                         .align(Alignment.TopEnd)
                         .padding(16.dp),
                     shape = RoundedCornerShape(30.dp),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00933B))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B))
                 ) {
                     Text(
                         "Dejar de compartir",
                         color = Color.White,
-                        style = AppTypography.h2,
+                        style = AppTypography.headlineMedium,
                         fontSize = 18.sp
                     )
                 }

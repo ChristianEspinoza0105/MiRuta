@@ -18,6 +18,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -127,10 +132,11 @@ fun LinesScreen(navController: NavController) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(35.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = Color.White,
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF00933B),
-                    unfocusedBorderColor = Color(0xFFE7E7E7)
+                    unfocusedBorderColor = Color(0xFFE7E7E7),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 ),
                 leadingIcon = {
                     Icon(
@@ -166,8 +172,8 @@ fun LinesScreen(navController: NavController) {
             fontSize = 28.sp,
             color = Color.Black,
             style = TextStyle(
-                fontFamily = AppTypography.h1.fontFamily,
-                fontWeight = AppTypography.h1.fontWeight,
+                fontFamily = AppTypography.headlineLarge.fontFamily,
+                fontWeight = AppTypography.headlineLarge.fontWeight,
                 fontSize = titleFontSize
             ),
             modifier = Modifier

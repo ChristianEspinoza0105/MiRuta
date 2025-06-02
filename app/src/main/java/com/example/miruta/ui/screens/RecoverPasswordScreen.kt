@@ -53,8 +53,8 @@ fun RecoverPasswordScreen(navController: NavController) {
                     text = "Recover Password",
                     color = Color(0xFF00933B),
                     style = TextStyle(
-                        fontFamily = AppTypography.h2.fontFamily,
-                        fontWeight = AppTypography.h2.fontWeight,
+                        fontFamily = AppTypography.headlineMedium.fontFamily,
+                        fontWeight = AppTypography.headlineMedium.fontWeight,
                         fontSize = 32.sp
                     )
                 )
@@ -123,11 +123,7 @@ fun RecoverPasswordScreen(navController: NavController) {
                     Text(
                         text = "Send Recovery Email",
                         color = Color.White,
-                        style = TextStyle(
-                            fontFamily = AppTypography.button.fontFamily,
-                            fontWeight = AppTypography.button.fontWeight,
-                            fontSize = 18.sp
-                        )
+                        style = AppTypography.titleMedium.copy(fontSize = 24.sp)
                     )
                 }
             }

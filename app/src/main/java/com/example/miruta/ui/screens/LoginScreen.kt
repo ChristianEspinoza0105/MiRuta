@@ -92,8 +92,8 @@ fun LoginScreen(
                     text = "Welcome Back",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.h1.fontFamily,
-                        fontWeight = AppTypography.h1.fontWeight,
+                        fontFamily = AppTypography.headlineLarge.fontFamily,
+                        fontWeight = AppTypography.headlineLarge.fontWeight,
                         fontSize = titleFontSize
                     ),
                     modifier = Modifier
@@ -104,8 +104,8 @@ fun LoginScreen(
                     text = "Always on route. Log in.",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier
@@ -136,8 +136,8 @@ fun LoginScreen(
                     text = "Log In",
                     color = Color(0xFF00933B),
                     style = TextStyle(
-                        fontFamily = AppTypography.h2.fontFamily,
-                        fontWeight = AppTypography.h2.fontWeight,
+                        fontFamily = AppTypography.headlineMedium.fontFamily,
+                        fontWeight = AppTypography.headlineMedium.fontWeight,
                         fontSize = 48.sp
                     ),
                     modifier = Modifier
@@ -204,8 +204,8 @@ fun LoginScreen(
                     text = "Forgot your password?",
                     color = Color.DarkGray,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = 16.sp
                     ),
                     modifier = Modifier
@@ -239,20 +239,17 @@ fun LoginScreen(
                     Text(
                         text = "Log in",
                         color = Color.White,
-                        style = TextStyle(
-                            fontFamily = AppTypography.button.fontFamily,
-                            fontWeight = AppTypography.button.fontWeight,
-                            fontSize = 24.sp
-                        )
+                        style = AppTypography.titleMedium.copy(fontSize = 24.sp)
                     )
+
                 }
 
                 Text(
                     text = "Don't have an account? Sign in",
                     color = Color.DarkGray,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = 16.sp
                     ),
                     modifier = Modifier

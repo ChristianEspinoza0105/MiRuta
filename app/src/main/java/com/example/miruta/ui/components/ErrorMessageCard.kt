@@ -74,7 +74,7 @@ fun ErrorMessageCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = message,
-                            style = AppTypography.body1.copy(
+                            style = AppTypography.bodyLarge.copy(
                                 fontSize = 18.sp,
                                 color = Color(0xFFD32F2F)
                             )
@@ -82,7 +82,7 @@ fun ErrorMessageCard(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = reason,
-                            style = AppTypography.body1.copy(
+                            style = AppTypography.bodyLarge.copy(
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
