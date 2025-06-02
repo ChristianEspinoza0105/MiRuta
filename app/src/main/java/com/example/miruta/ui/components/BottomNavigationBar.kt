@@ -4,7 +4,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +20,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.miruta.R
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
     val items = listOf(
@@ -31,7 +33,7 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
         BottomNavScreen.Auth(isUserLoggedIn),
     )
 
-    BottomNavigation(
+    NavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
@@ -39,8 +41,8 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
                 painterResource(id = R.drawable.menu),
                 contentScale = ContentScale.Crop
             ),
-        backgroundColor = Color.Transparent,
-        elevation = 0.dp
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp
     ) {
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry.value?.destination?.route
@@ -52,7 +54,7 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
                 animationSpec = tween(durationMillis = 300)
             )
 
-            BottomNavigationItem(
+            NavigationBarItem(
                 icon = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -65,15 +67,14 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
                             contentDescription = screen.title,
                             modifier = Modifier.size(35.dp)
                         )
-                        Spacer(modifier = Modifier.height(1.dp))
                     }
                 },
                 label = {
                     Text(
                         screen.title,
                         style = TextStyle(
-                            fontFamily = AppTypography.body1.fontFamily,
-                            fontWeight = AppTypography.body1.fontWeight,
+                            fontFamily = AppTypography.bodyLarge.fontFamily,
+                            fontWeight = AppTypography.bodyLarge.fontWeight,
                             fontSize = if (isSelected) 11.sp else 10.sp,
                             color = if (isSelected) Color(0xFF00933B) else Color.Gray
                         )
@@ -89,8 +90,12 @@ fun BottomNavigationBar(navController: NavController, isUserLoggedIn: Boolean) {
                         }
                     }
                 },
-                selectedContentColor = Color(0xFF00933B),
-                unselectedContentColor = Color.Gray
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFF00933B),
+                    unselectedIconColor = Color.Gray,
+                    selectedTextColor = Color(0xFF00933B),
+                    unselectedTextColor = Color.Gray
+                )
             )
         }
     }

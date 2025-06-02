@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
 import kotlinx.coroutines.tasks.await
 import androidx.compose.runtime.Composable
@@ -41,6 +41,8 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
@@ -203,10 +205,11 @@ fun ExploreScreen() {
                     .height(56.dp)
                     .onFocusChanged { isOrigenFocused = it.isFocused },
                 shape = RoundedCornerShape(35.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = Color.White,
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF00933B),
-                    unfocusedBorderColor = Color(0xFFE7E7E7)
+                    unfocusedBorderColor = Color(0xFFE7E7E7),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 ),
                 leadingIcon = {
                     Icon(
@@ -231,7 +234,7 @@ fun ExploreScreen() {
                 },
                 trailingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = "Buscar",
                         modifier = Modifier
                             .padding(8.dp)
@@ -281,12 +284,13 @@ fun ExploreScreen() {
                         .height(56.dp)
                         .onFocusChanged { isDestinoFocused = it.isFocused },
                     shape = RoundedCornerShape(35.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        backgroundColor = Color.White,
+                    colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7)
+                        unfocusedBorderColor = Color(0xFFE7E7E7),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     ),
-                    leadingIcon = {
+                            leadingIcon = {
                         Icon(
                             painter = painterResource(
                                 id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_app
@@ -309,7 +313,7 @@ fun ExploreScreen() {
                     },
                     trailingIcon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.search),
+                            painter = painterResource(id = R.drawable.ic_search),
                             contentDescription = "Buscar",
                             modifier = Modifier
                                 .padding(8.dp)

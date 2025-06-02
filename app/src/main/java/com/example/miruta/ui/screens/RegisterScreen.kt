@@ -8,16 +8,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.TextField
 import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -31,6 +33,7 @@ import com.example.miruta.R
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
+import androidx.compose.material3.TextFieldDefaults
 
 @Composable
 fun RegisterScreen(
@@ -42,6 +45,14 @@ authViewModel: AuthViewModel = hiltViewModel()
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     val context = LocalContext.current
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val horizontalPadding = (screenWidth.value * 0.1).dp
+    val fieldCornerRadius = (screenWidth.value * 0.05).dp
+    val textFieldFontSize = (screenWidth.value * 0.04).sp
 
     ConstraintLayout(
         modifier = Modifier
@@ -73,8 +84,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Hello",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.h1.fontFamily,
-                        fontWeight = AppTypography.h1.fontWeight,
+                        fontFamily = AppTypography.headlineLarge.fontFamily,
+                        fontWeight = AppTypography.headlineLarge.fontWeight,
                         fontSize = titleFontSize
                     ),
                     modifier = Modifier
@@ -85,8 +96,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Always on route. Sign up.",
                     color = Color.White,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier
@@ -115,8 +126,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Sign up",
                     color = Color(0xFF00933B),
                     style = TextStyle(
-                        fontFamily = AppTypography.h2.fontFamily,
-                        fontWeight = AppTypography.h2.fontWeight,
+                        fontFamily = AppTypography.headlineMedium.fontFamily,
+                        fontWeight = AppTypography.headlineMedium.fontWeight,
                         fontSize = 48.sp
                     ),
                     modifier = Modifier
@@ -124,109 +135,108 @@ authViewModel: AuthViewModel = hiltViewModel()
                         .padding(start = 45.dp, top = 20.dp)
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = {
-                        Text(
-                            text = "Name",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
+                    label = { Text("Name", fontSize = textFieldFontSize) },
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = {
-                        Text(
-                            text = "Phone number",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
+                    label = { Text("Phone number", fontSize = textFieldFontSize) },
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = {
-                        Text(
-                            text = "Email",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
+                    label = { Text("Email", fontSize = textFieldFontSize)  },
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
+                TextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = {
-                        Text(
-                            text = "Password",
-                            style = TextStyle(
-                                color = Color.DarkGray,
-                                fontFamily = AppTypography.body1.fontFamily,
-                                fontWeight = AppTypography.body1.fontWeight,
-                                fontSize = 16.sp
-                            )
-                        )
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
+                    label = { Text("Password", fontSize = textFieldFontSize)},
                     modifier = Modifier
-                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = Color(0xFF00933B),
-                        unfocusedBorderColor = Color(0xFFE7E7E7),
-                        backgroundColor = Color(0xFFE7E7E7)
-                    )
+                        .padding(horizontal = horizontalPadding, vertical = 8.dp)
+                        .shadow(
+                            elevation = 20.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
+                        ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
 
                 Button(
@@ -262,11 +272,7 @@ authViewModel: AuthViewModel = hiltViewModel()
                     Text(
                         text = "Sign up",
                         color = Color.White,
-                        style = TextStyle(
-                            fontFamily = AppTypography.button.fontFamily,
-                            fontWeight = AppTypography.button.fontWeight,
-                            fontSize = 24.sp
-                        )
+                        style = AppTypography.titleMedium.copy(fontSize = 24.sp)
                     )
                 }
 
@@ -293,8 +299,8 @@ authViewModel: AuthViewModel = hiltViewModel()
                     text = "Driver? Register here and track your routes in real-time!",
                     color = Color.DarkGray,
                     style = TextStyle(
-                        fontFamily = AppTypography.body1.fontFamily,
-                        fontWeight = AppTypography.body1.fontWeight,
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
                         fontSize = subtitleFontSize
                     ),
                     modifier = Modifier
@@ -304,16 +310,31 @@ authViewModel: AuthViewModel = hiltViewModel()
                         }
                 )
 
+                Text(
+                    text = "Already have an account? Login here!",
+                    color = Color.DarkGray,
+                    style = TextStyle(
+                        fontFamily = AppTypography.bodyLarge.fontFamily,
+                        fontWeight = AppTypography.bodyLarge.fontWeight,
+                        fontSize = subtitleFontSize
+                    ),
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .clickable {
+                            navController.navigate("LoginScreen")
+                        }
+                )
+
             }
         }
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val screenHeight = configuration.screenHeightDp.dp
 
-        val imageWidth = screenWidth * 0.4f
+        val imageWidth = screenWidth * 0.35f
         val imageHeight = screenHeight * 0.2f
         val guideline = createGuidelineFromTop(0.090f)
-        val guidelineStart = createGuidelineFromStart(0.5f)
+        val guidelineStart = createGuidelineFromStart(0.55f)
         Image(
             painter = painterResource(id = R.drawable.ic_bus),
             contentDescription = "Logo",

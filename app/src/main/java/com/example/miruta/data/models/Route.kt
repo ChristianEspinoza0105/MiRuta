@@ -1,6 +1,7 @@
 package com.example.miruta.data.models
 
 data class Route(
+    val id: String = "",
     val routeId: String,
     val routeShortName: String,
     val routeLongName: String,

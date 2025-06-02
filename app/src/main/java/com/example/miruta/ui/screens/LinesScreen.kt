@@ -9,12 +9,20 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +41,11 @@ import com.example.miruta.data.models.Route
 import com.example.miruta.ui.components.RouteCard
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.util.parseRouteColor
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -42,6 +54,37 @@ fun LinesScreen(navController: NavController) {
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedTransport by remember { mutableStateOf<String?>(null) }
+
+    val listState = rememberLazyListState()
+
+    val imageFilters = listOf(
+        R.drawable.mi_transporte to "mi_transporte",
+        R.drawable.mi_tren to "mi_tren",
+        R.drawable.mi_macro to "mi_macro"
+    )
+
+    val infiniteImages = remember {
+        List(1000) { index -> imageFilters[index % imageFilters.size] }
+    }
+
+    val autoScrollJob = remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(listState) {
+        val job = launchAutoScroll(listState, infiniteImages)
+        autoScrollJob.value = job
+
+        snapshotFlow { listState.isScrollInProgress }.collect { isScrolling ->
+            if (isScrolling) {
+                autoScrollJob.value?.cancel()
+            } else {
+                delay(3000)
+                if (!listState.isScrollInProgress) {
+                    autoScrollJob.value = launchAutoScroll(listState, infiniteImages)
+                }
+            }
+        }
+    }
+
 
     LaunchedEffect(Unit) {
         val list = withContext(Dispatchers.IO) {
@@ -89,10 +132,11 @@ fun LinesScreen(navController: NavController) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(35.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = Color.White,
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF00933B),
-                    unfocusedBorderColor = Color(0xFFE7E7E7)
+                    unfocusedBorderColor = Color(0xFFE7E7E7),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 ),
                 leadingIcon = {
                     Icon(
@@ -101,11 +145,12 @@ fun LinesScreen(navController: NavController) {
                         modifier = Modifier
                             .padding(8.dp)
                             .size(24.dp),
-                        tint = Color(0xFF00933B))
+                        tint = Color(0xFF00933B)
+                    )
                 },
                 trailingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = "Buscar",
                         modifier = Modifier
                             .padding(8.dp)
@@ -118,47 +163,6 @@ fun LinesScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        AnimatedVisibility(
-            visible = searchQuery.isEmpty() && selectedTransport == null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column {
-                val imageFilters = listOf(
-                    R.drawable.mi_transporte to "mi_transporte",
-                    R.drawable.mi_tren to "mi_tren",
-                    R.drawable.mi_macro to "mi_macro"
-                )
-
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    items(imageFilters) { (imageRes, filterType) ->
-                        Box(
-                            modifier = Modifier
-                                .width(200.dp)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    selectedTransport = if (selectedTransport == filterType) null else filterType
-                                }
-                        ) {
-                            Image(
-                                painter = painterResource(id = imageRes),
-                                contentDescription = "Option image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val titleFontSize = (screenWidth.value * 0.20).sp
@@ -168,8 +172,8 @@ fun LinesScreen(navController: NavController) {
             fontSize = 28.sp,
             color = Color.Black,
             style = TextStyle(
-                fontFamily = AppTypography.h1.fontFamily,
-                fontWeight = AppTypography.h1.fontWeight,
+                fontFamily = AppTypography.headlineLarge.fontFamily,
+                fontWeight = AppTypography.headlineLarge.fontWeight,
                 fontSize = titleFontSize
             ),
             modifier = Modifier
@@ -179,12 +183,50 @@ fun LinesScreen(navController: NavController) {
         Divider(
             color = Color(0xFFE0E0E0),
             thickness = 1.dp,
-            modifier = Modifier
-                .padding(vertical = 0.dp)
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
 
-        LazyColumn {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            item {
+                AnimatedVisibility(
+                    visible = searchQuery.isEmpty() && selectedTransport == null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+
+                    LazyRow(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        items(infiniteImages) { (imageRes, filterType) ->
+                            Box(
+                                modifier = Modifier
+                                    .width(200.dp)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        selectedTransport = if (selectedTransport == filterType) null else filterType
+                                    }
+                            ) {
+                                Image(
+                                    painter = painterResource(id = imageRes),
+                                    contentDescription = "Option image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             items(filtered) { route ->
                 val icon = painterResource(id = R.drawable.ic_busline)
 
@@ -195,9 +237,25 @@ fun LinesScreen(navController: NavController) {
                     icon = icon,
                     onClick = {
                         val colorHex = route.routeColor ?: "000000"
-                        navController.navigate("routeMap/${route.routeId}/$colorHex")
+                        navController.navigate("routeMap/${route.routeId}/$colorHex/${route.routeShortName}")
                     }
                 )
+            }
+        }
+    }
+}
+
+fun CoroutineScope.launchAutoScroll(
+    listState: LazyListState,
+    infiniteImages: List<Pair<Int, String>>
+): Job {
+    return launch {
+        while (true) {
+            listState.scrollBy(1f)
+            delay(15)
+
+            if (listState.firstVisibleItemIndex > infiniteImages.size - 20) {
+                listState.scrollToItem(infiniteImages.size / 2)
             }
         }
     }
