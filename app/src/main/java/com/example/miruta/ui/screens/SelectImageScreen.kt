@@ -38,12 +38,12 @@ import com.example.miruta.ui.viewmodel.AuthViewModel
 fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
 
     val avatars = listOf(
-        R.drawable.avatar_placeholder_1,
-        R.drawable.avatar_placeholder_2,
-        R.drawable.avatar_placeholder_3,
-        R.drawable.avatar_placeholder_4,
-        R.drawable.avatar_placeholder_5,
-        R.drawable.avatar_placeholder_6
+        R.drawable.bus_verde_cono,
+        R.drawable.bus_verde_cachucha,
+        R.drawable.bus_blanco_copa,
+        R.drawable.bus_blanco_vaquero,
+        R.drawable.bus_rojo_ushanka,
+        R.drawable.bus_rojo_boina
     )
 
     val viewModelAvatarIndex by remember { derivedStateOf { authViewModel.photoIndex.toIntOrNull()?.coerceIn(0, avatars.lastIndex) ?: 0 } }

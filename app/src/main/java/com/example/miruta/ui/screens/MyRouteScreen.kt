@@ -40,9 +40,19 @@ import android.location.Geocoder
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Button
+import androidx.compose.material.IconButton
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.miruta.data.gtfs.parseRoutesFromGTFS
@@ -55,6 +65,13 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.LocalTime
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.RectangularBounds
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.firebase.annotations.concurrent.Background
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -66,6 +83,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,7 +112,7 @@ fun MyRouteScreen(navController: NavHostController) {
     var showChooseMapSheet by remember { mutableStateOf(false) }
 
     //Bottonsheet Current Location
-    val currentLocationSheetState = rememberModalBottomSheetState()
+    val currentLocationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showCurrentLocationSheet by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
@@ -275,6 +293,12 @@ fun CurrentLocationBottomSheetContent(
     onCurrentLocationButtonClick: () -> Unit,
     onCloseAllSheets: () -> Unit
 ) {
+    var address by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var suggestions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
+    val defaultLocation = LatLng(20.659699, -103.349609)
+    val placesClient = remember { PlacesClientProvider.getClient(context) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,10 +387,34 @@ fun CurrentLocationBottomSheetContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                var address by remember { mutableStateOf("") }
+
                 TextField(
                     value = address,
-                    onValueChange = { address = it },
+                    onValueChange = { query ->
+                        address = query
+                        if (query.isNotBlank()) {
+                            val locationBias = RectangularBounds.newInstance(
+                                LatLngBounds.builder()
+                                    .include(defaultLocation)
+                                    .build()
+                            )
+
+                            val request = FindAutocompletePredictionsRequest.builder()
+                                .setQuery(query)
+                                .setLocationBias(locationBias)
+                                .build()
+
+                            placesClient.findAutocompletePredictions(request)
+                                .addOnSuccessListener { response ->
+                                    suggestions = response.autocompletePredictions
+                                }
+                                .addOnFailureListener {
+                                    suggestions = emptyList()
+                                }
+                        } else {
+                            suggestions = emptyList()
+                        }
+                    },
                     label = { Text("Add address") },
                     modifier = Modifier
                         .weight(1f)
@@ -405,11 +453,197 @@ fun CurrentLocationBottomSheetContent(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        if(suggestions.isNotEmpty()){
+            LazyColumn (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(8.dp)
+            ){
+                suggestions.forEach { prediction ->
+                    item {
+                        val focusManager = LocalFocusManager.current
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        Text(
+                            text = prediction.getFullText(null).toString(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable{
+                                    address = prediction.getFullText(null).toString()
+                                    suggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
+    //Variables del Dialog
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedStopIndex by remember { mutableStateOf(-1) }
+    var selectedPlace by remember { mutableStateOf<Place?>(null) }
+    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+
+
+
+    //Variables de LazyColumn
+    val initialStops = List(6) { "" }
+    var stops by remember { mutableStateOf(initialStops) }
+
+    //Variables para el mapa
+    val context = LocalContext.current
+    val defaultLocation = LatLng(20.659699, -103.349609)
+    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
+    var locationName by remember { mutableStateOf("Choose a location in the map") }
+    var isLoading by remember { mutableStateOf(true) }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+    }
+
+    suspend fun getLocationName(latLng: LatLng): String {
+        return try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+
+            if (!addresses.isNullOrEmpty()) {
+                val address = addresses[0]
+                val sb = StringBuilder()
+                for (i in 0..address.maxAddressLineIndex) {
+                    sb.append(address.getAddressLine(i))
+                    if (i < address.maxAddressLineIndex) sb.append(", ")
+                }
+                sb.toString()
+            } else {
+                "${latLng.latitude}, ${latLng.longitude}"
+            }
+        } catch (e: Exception) {
+            Log.e("Geocoder", "Error getting location name", e)
+            "${latLng.latitude}, ${latLng.longitude}"
+        }
+    }
+
+    LaunchedEffect(selectedLocation) {
+        selectedLocation?.let { latLng ->
+            locationName = "Getting location..."
+            locationName = getLocationName(latLng)
+        }
+    }
+
+    val locationPermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
+        if (locationPermissionsState.allPermissionsGranted) {
+            try {
+                val location = getDeviceLocation(context).await()
+                val target = LatLng(location.latitude, location.longitude)
+                userLocation = target
+                cameraPositionState.position = CameraPosition.fromLatLngZoom(target, 15f)
+                isLoading = false
+            } catch (e: Exception) {
+                userLocation = defaultLocation
+                cameraPositionState.position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+                isLoading = false
+            }
+        } else {
+            locationPermissionsState.launchMultiplePermissionRequest()
+        }
+    }
+
+    if (showDialog) {
+        val timePickerState = rememberTimePickerState()
+
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+                title = { "Add Bus Stop "},
+            text = {
+                Column {
+                    // Map view
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        } else {
+                            GoogleMap(
+                                modifier = Modifier.fillMaxSize(),
+                                cameraPositionState = cameraPositionState,
+                                onMapClick = { latLng ->
+                                    selectedLocation = latLng
+                                }
+                            ) {
+                                selectedLocation?.let { latLng ->
+                                    Marker(
+                                        state = MarkerState(position = latLng),
+                                        title = "Selected Location"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = locationName,
+                        modifier = Modifier.padding(8.dp),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Column {
+                        Text("Select time:", modifier = Modifier.padding(bottom = 8.dp))
+                        TimePicker(
+                            state = timePickerState,
+                            colors = TimePickerDefaults.colors(
+                                selectorColor = Color(0xFF00933B),
+                                timeSelectorSelectedContainerColor = Color(0xFF00933B),
+                                periodSelectorSelectedContainerColor = Color(0xFF00933B),
+                            )
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(Color(0xFF00933B)),
+                    onClick = {
+                        stops = stops.toMutableList().apply {
+                            this[selectedStopIndex] =
+                                "$locationName at ${String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)}"
+                        }
+                        showDialog = false
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                Button(
+                    colors = ButtonDefaults.buttonColors(Color(0xFF00933B)),
+                    onClick = { showDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
     Column(modifier = Modifier
         .padding(16.dp)
         .fillMaxHeight()) {
@@ -494,7 +728,6 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                     .padding(8.dp)
             ) {
                 Row {
-                    // Flecha vertical verde
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -523,28 +756,47 @@ fun RoutineBottomSheetContent(onDismiss: () -> Unit) {
                     LazyColumn(
                         modifier = Modifier.weight(1f)
                     ) {
-                        items(6) { index ->
-                            var text by remember { mutableStateOf("") }
-                            TextField(
-                                value = text,
-                                onValueChange = { text = it },
-                                label = { Text("Add stop") },
+                        itemsIndexed(stops) { index, stopText ->
+
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White),
-                                colors = TextFieldDefaults.colors(
-                                    cursorColor = Color.Black,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    focusedLabelColor = Color.Black
-                                    )
-                            )
+                                    .fillMaxHeight(1f)
+                                    .background(Color.White)
+                                    .clickable {
+                                        selectedStopIndex = index
+                                        showDialog = true
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = if (stopText.isEmpty()) "Click to add stop" else stopText,
+                                    color = if (stopText.isEmpty()) LocalContentColor.current.copy(alpha = 1f)
+                                    else LocalContentColor.current,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                             Divider(modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .background(color = Color.White, shape = RoundedCornerShape(50))
+                    .align(alignment = Alignment.End)
+            ){
+                IconButton(
+                    onClick = {
+                        stops = stops + ""
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add",
+                        tint = Color(0xFF00933B),
+                    )
                 }
             }
         }
@@ -871,33 +1123,6 @@ fun LocationBottomSheetContent(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        var text by remember { mutableStateOf("") }
-        TextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("Write address") },
-            modifier = Modifier
-                .shadow(
-                    elevation = 10.6.dp,
-                    spotColor = Color(0x40000000),
-                    ambientColor = Color(0x40000000)
-                )
-                .background(Color.White, RoundedCornerShape(40))
-                .fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                cursorColor = Color.Black,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Transparent,
-                focusedLabelColor = Color.Black
-                ),
-            shape = RoundedCornerShape(50),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
         TextButton(
             onClick = { onCurrentLocationButtonClick() },
             modifier = Modifier
@@ -994,7 +1219,6 @@ fun ChooseMapBottomSheetContent(
         )
     )
 
-    // Fetch device location when permissions are granted
     LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
         if (locationPermissionsState.allPermissionsGranted) {
             try {
@@ -1064,7 +1288,7 @@ fun ChooseMapBottomSheetContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(580.dp)
+                .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
         ) {
             if (isLoading) {
@@ -1084,13 +1308,13 @@ fun ChooseMapBottomSheetContent(
                         selectedLocation = latLng
                     }
                 ) {
-                    // My location marker
+
                     if (locationPermissionsState.allPermissionsGranted) {
                         userLocation?.let { latLng ->
 
                         }
                     }
-                    // Selected location marker
+
                     selectedLocation?.let { latLng ->
                         Marker(
                             state = MarkerState(position = latLng),
@@ -1100,6 +1324,39 @@ fun ChooseMapBottomSheetContent(
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+        ) {
+            var favoriteName by remember { mutableStateOf("") }
+            TextField(
+                value = favoriteName,
+                onValueChange = { favoriteName = it },
+                label = { Text("Add favorite name", fontSize = 16.sp) },
+                modifier = Modifier
+                    .shadow(
+                        elevation = 10.600000381469727.dp,
+                        spotColor = Color(0x40000000),
+                        ambientColor = Color(0x40000000)
+                    )
+                    .background(Color.White, RoundedCornerShape(40))
+                    .fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    cursorColor = Color.Black,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    focusedLabelColor = Color.Black,
+                ),
+                shape = RoundedCornerShape(50),
+                singleLine = true
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1133,7 +1390,7 @@ fun ChooseMapBottomSheetContent(
                 readOnly = true,
                 placeholder = {
                     if (locationName.isEmpty()) {
-                        Text("Selecciona una ubicación en el mapa")
+                        Text("Selecciona una ubicación en el mapa", fontSize = 18.sp)
                     }
                 }
             )
@@ -1161,7 +1418,6 @@ fun ChooseMapBottomSheetContent(
     }
 }
 
-// Helper function to get device location
 private fun getDeviceLocation(context: Context) =
     LocationServices.getFusedLocationProviderClient(context)
         .lastLocation

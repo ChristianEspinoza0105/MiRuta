@@ -56,11 +56,14 @@ private fun getAvatarResource(index: Int): Int {
 }
 
 @Composable
-fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
+fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel = hiltViewModel()) {
     val selectedImage = remember { mutableStateOf(R.drawable.bus_verde_cono) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var plates by remember { mutableStateOf("") }
+    var route by remember { mutableStateOf("") }
+
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -68,14 +71,16 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
 
     // Cargar datos del usuario al iniciar
     LaunchedEffect(Unit) {
-        authViewModel.loadUserData()
+        authViewModel.loadDriverData()
     }
 
     // Observar cambios en el ViewModel y reflejarlos
-    LaunchedEffect(authViewModel.userName, authViewModel.userEmail, authViewModel.userPhone, authViewModel.photoIndex) {
+    LaunchedEffect(authViewModel.userName, authViewModel.userEmail, authViewModel.userPhone, authViewModel.photoIndex, authViewModel.plates, authViewModel.route) {
         name = authViewModel.userName
         phone = authViewModel.userPhone
         email = authViewModel.userEmail
+        plates = authViewModel.plates
+        route = authViewModel.route
 
         val index = authViewModel.photoIndex.toIntOrNull() ?: 0
         selectedImage.value = getAvatarResource(index)
@@ -113,7 +118,7 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = authViewModel.userName,
+                    text = name,
                     fontSize = 28.sp,
                     color = Color.White,
                     style = AppTypography.h1,
@@ -148,6 +153,8 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                             color = Color.White,
                             shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
                         )
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 60.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -235,14 +242,54 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                             )
                         )
 
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = plates,
+                            onValueChange = { plates = it },
+                            label = {
+                                Text("Placas", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFF00933B),
+                                unfocusedBorderColor = Color(0xFFE7E7E7),
+                                backgroundColor = Color.White
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = route,
+                            onValueChange = { route = it },
+                            label = {
+                                Text("Ruta", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFF00933B),
+                                unfocusedBorderColor = Color(0xFFE7E7E7),
+                                backgroundColor = Color.White
+                            )
+                        )
+
                         Spacer(modifier = Modifier.height(32.dp))
 
                         Button(
                             onClick = {
-                                authViewModel.updateUserData(
+                                authViewModel.updateDriverData(
                                     name = name,
                                     phone = phone,
                                     email = email,
+                                    route = route,
+                                    plates = plates,
                                     onResult = { success ->
                                         if (success) {
                                             Toast.makeText(context, "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
