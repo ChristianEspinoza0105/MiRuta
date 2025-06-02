@@ -80,7 +80,7 @@ fun NarrowBottomSheetScaffold(
                         Box(
                             modifier = Modifier
                                 .width(sheetWidth)
-                                .padding(horizontal = 24.dp)
+                                .padding(horizontal = 15.dp)
                                 .navigationBarsPadding()
                                 .imePadding()
                         ) {

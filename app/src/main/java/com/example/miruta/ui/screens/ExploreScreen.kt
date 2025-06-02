@@ -24,7 +24,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import com.example.miruta.ui.components.NarrowBottomSheetScaffold
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,12 +40,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -110,24 +103,29 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.ui.text.TextStyle
 import com.example.miruta.ui.theme.AppTypography
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import com.example.miruta.ui.components.LoadingSpinner
+import com.example.miruta.ui.theme.PoppinsFontFamily
 import com.google.android.gms.maps.model.Dot
 import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
 import kotlinx.coroutines.delay
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -1079,7 +1077,6 @@ fun RouteStepItem(
     }
 }
 
-
 @Composable
 private fun EmptyRouteContent() {
     Column(
@@ -1174,89 +1171,94 @@ fun parseRouteColor(routeColor: String?): Color {
 }
 
 @Composable
-private fun RouteSummaryCard(
+private fun RouteSummary(
     itinerary: Itinerary,
     index: Int,
     expanded: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
-){
+) {
     val baseRouteColor = itinerary.legs
         ?.mapNotNull { it.routeColor }
         ?.firstOrNull()
         ?.let { parseRouteColor(it) }
         ?: Color(0xFFCCCCCC)
 
-    val backgroundColor = if (isSelected) {
-        baseRouteColor.copy(alpha = 0.3f)
-    } else {
-        baseRouteColor.copy(alpha = 0.1f)
-    }
+    val scrollState = rememberScrollState()
 
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        shape = RoundedCornerShape(8.dp),
-        border = if (isSelected) BorderStroke(2.dp, baseRouteColor) else null
+            .clickable { onClick() }
+            .padding(5.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_route_favorite),
-                    contentDescription = "Ruta",
-                    tint = baseRouteColor,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Option ${index + 1}",
-                        style = MaterialTheme.typography.titleMedium,
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_route_favorite),
+                contentDescription = "Ruta",
+                tint = baseRouteColor,
+                modifier = Modifier.size(35.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (index == 0) "Faster route" else "Trip ${index + 1}",
+                    style = AppTypography.h2.copy(
+                        fontFamily = PoppinsFontFamily,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "Total time: ${(itinerary.duration?.div(60) ?: 0)} min",
-                        style = MaterialTheme.typography.bodySmall,
+                )
+                Text(
+                    text = "Estimated time: ${(itinerary.duration?.div(60) ?: 0)} min",
+                    style = AppTypography.body2.copy(
+                        fontFamily = PoppinsFontFamily,
+                        fontSize = 12.sp,
                         color = Color.Gray
                     )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Check,
-                    contentDescription = if (expanded) "Mostrar menos" else "Mostrar más",
-                    tint = Color.Gray
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Transfers needed: ${itinerary.legs?.size?.minus(1) ?: 0}",
+            style = AppTypography.body2.copy(
+                fontFamily = PoppinsFontFamily,
+                fontSize = 13.sp,
+                color = Color.Gray
+            )
+        )
+
+        val routeNames = itinerary.legs?.mapNotNull { it.route }?.distinct() ?: emptyList()
+        if (routeNames.isNotEmpty()) {
+            Text(
+                text = "Transit lines: ${routeNames.joinToString(", ")}",
+                style = AppTypography.body2.copy(
+                    fontFamily = PoppinsFontFamily,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            )
+        }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Transfers: ${itinerary.legs?.size?.minus(1) ?: 0}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-
-            val routeNames = itinerary.legs?.mapNotNull { it.route }?.distinct() ?: emptyList()
-            if (routeNames.isNotEmpty()) {
-                Text(
-                    text = "Routes: ${routeNames.joinToString(", ")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
+                        .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itinerary.legs?.forEach { leg ->
@@ -1264,7 +1266,6 @@ private fun RouteSummaryCard(
                         if (leg.mode == "WALK") {
                             Box(
                                 modifier = Modifier
-                                    .background(Color.LightGray, RoundedCornerShape(12.dp))
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1283,16 +1284,20 @@ private fun RouteSummaryCard(
                             ) {
                                 Text(
                                     text = leg.route ?: "N/A",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
+                                    style = AppTypography.body2.copy(
+                                        fontFamily = PoppinsFontFamily,
+                                        color = Color.White
+                                    )
                                 )
                             }
                         }
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = Color.LightGray, thickness = 1.dp)
         }
     }
-}
 
 @Composable
 private fun RouteDetailsContent(
@@ -1306,7 +1311,7 @@ private fun RouteDetailsContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
+            .padding(horizontal = 5.dp)
             .verticalScroll(scrollState)
     ) {
         Text(
@@ -1331,7 +1336,7 @@ private fun RouteDetailsContent(
             } else {
                 sortedRoutes.forEach { (originalIndex, itinerary) ->
                     val sortedIndex = sortedRoutes.indexOf(originalIndex to itinerary)
-                    RouteSummaryCard(
+                    RouteSummary(
                         itinerary = itinerary,
                         index = sortedIndex,
                         expanded = false,
@@ -1340,10 +1345,13 @@ private fun RouteDetailsContent(
                             onItinerarySelected(originalIndex)
                             onShowSteps(itinerary)
                         },
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(60.dp))
+
     }
 }
