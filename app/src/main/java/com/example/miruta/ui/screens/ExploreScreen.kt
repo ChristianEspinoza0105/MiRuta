@@ -263,10 +263,15 @@ fun ExploreScreen(navController: NavHostController? = null) {
         return sdf.format(Date()).lowercase(Locale.US)
     }
 
+    fun getCurrentDate(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        return sdf.format(Date())
+    }
+
     fun fetchRoutePlan(
         from: LatLng,
         to: LatLng,
-        date: String = "2025-06-10",
+        date: String? = null,
         time: String? = null
     ) {
         isLoadingRoute = true
@@ -274,13 +279,14 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
         coroutineScope.launch {
             try {
+                val currentDate = date ?: getCurrentDate()
                 val currentTime = time ?: getCurrentTimeAmPm()
 
                 val response = RetrofitClient.otpApiService.getRoutePlan(
                     fromPlace = "${from.latitude},${from.longitude}",
                     toPlace = "${to.latitude},${to.longitude}",
                     mode = "TRANSIT",
-                    date = date,
+                    date = currentDate,
                     time = currentTime,
                     ignoreRealtimeUpdates = true
                 )
@@ -657,7 +663,8 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                     focusManager.clearFocus()
                                     keyboardController?.hide()
                                     updateCameraPosition(origenLatLng, destinoLatLng)
-                                }
+                                },
+                                isOrigin = true
                             )
                         }
 
@@ -676,7 +683,8 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                             updateCameraPosition(origenLatLng, destinoLatLng)
                                         }
                                     }
-                                }
+                                },
+                                isOrigin = true
                             )
                         }
 
@@ -690,7 +698,8 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                     focusManager.clearFocus()
                                     keyboardController?.hide()
                                     updateCameraPosition(origenLatLng, destinoLatLng)
-                                }
+                                },
+                                isOrigin = false
                             )
                         }
 
@@ -709,11 +718,13 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                             updateCameraPosition(origenLatLng, destinoLatLng)
                                         }
                                     }
-                                }
+                                },
+                                isOrigin = false
                             )
                         }
                     }
                 }
+
 
                 errorMessage?.let {
                     Box(
@@ -815,18 +826,11 @@ fun decodePolyline(encoded: String): List<LatLng> {
 }
 
 fun sortRoutesByDuration(itineraries: List<Itinerary>): List<Pair<Int, Itinerary>> {
-    val seen = mutableSetOf<String>()
-
-    return itineraries.mapIndexedNotNull { index, itinerary ->
-        val key = (itinerary.duration ?: 0).toString() + "_" +
-                (itinerary.legs?.map { it.route ?: "" }?.joinToString("-") ?: "")
-        if (seen.contains(key)) {
-            null
-        } else {
-            seen.add(key)
-            index to itinerary
-        }
-    }.sortedBy { (_, itinerary) -> itinerary.duration ?: Int.MAX_VALUE }
+    return itineraries.mapIndexed { index, itinerary ->
+        index to itinerary
+    }.sortedBy { (_, itinerary) ->
+        itinerary.duration ?: Int.MAX_VALUE
+    }
 }
 
 @Composable
@@ -1109,9 +1113,16 @@ fun parseAddress(fullText: String): Pair<String, String> {
 @Composable
 fun SuggestionItem(
     fullText: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isOrigin: Boolean
 ) {
     val (mainAddress, secondaryAddress) = parseAddress(fullText)
+
+    val iconPainter = painterResource(
+        id = if (isOrigin) R.drawable.ic_app else R.drawable.ic_busline
+    )
+
+    val iconTint = if (isOrigin) Color(0xFF00933B) else Color(0xFF00933B)
 
     Column(
         modifier = Modifier
@@ -1143,9 +1154,9 @@ fun SuggestionItem(
                 }
             }
             Icon(
-                imageVector = Icons.Default.Place,
-                contentDescription = "Tiempo estimado",
-                tint = Color(0xFF00933B),
+                painter = iconPainter,
+                contentDescription = if (isOrigin) "Icono Origen" else "Icono Destino",
+                tint = iconTint,
                 modifier = Modifier.size(20.dp)
             )
         }
