@@ -11,6 +11,19 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import com.example.miruta.ui.components.NarrowBottomSheetScaffold
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +45,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,7 +102,6 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -101,11 +110,24 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.ui.text.TextStyle
 import com.example.miruta.ui.theme.AppTypography
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
+import com.example.miruta.ui.components.LoadingSpinner
 import com.google.android.gms.maps.model.Dot
 import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -144,6 +166,29 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 10f)
+    }
+
+    var showRouteSteps by remember { mutableStateOf(false) }
+    var selectedItineraryForSteps by remember { mutableStateOf<Itinerary?>(null) }
+
+    var showBottomSheet by remember { mutableStateOf(false) }
+
+    val shouldShowInputs = !isLoadingRoute && routePlan == null
+    val shouldShowBottomSheet = (routePlan != null ||
+            (origen.isEmpty() && destino.isEmpty())) &&
+            suggestions.isEmpty() &&
+            destinoSuggestions.isEmpty() &&
+            !isOrigenFocused &&
+            !isDestinoFocused &&
+            !isLoadingRoute
+
+    LaunchedEffect(shouldShowBottomSheet) {
+        showBottomSheet = shouldShowBottomSheet
+        if (shouldShowBottomSheet) {
+            bottomSheetScaffoldState.bottomSheetState.expand()
+        } else {
+            bottomSheetScaffoldState.bottomSheetState.partialExpand()
+        }
     }
 
     val locationPermissionsState = rememberMultiplePermissionsState(
@@ -207,6 +252,12 @@ fun ExploreScreen(navController: NavHostController? = null) {
         }
     }
 
+    LaunchedEffect(selectedItineraryIndex) {
+        routePlan?.plan?.itineraries?.get(selectedItineraryIndex)?.let {
+            updateCameraForSelectedItinerary(it)
+        }
+    }
+
     fun getCurrentTimeAmPm(): String {
         val sdf = SimpleDateFormat("hh:mma", Locale.US)
         return sdf.format(Date()).lowercase(Locale.US)
@@ -237,7 +288,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
                 routePlan = response
                 sheetState.expand()
 
-                // Guardar todos los itinerarios con sus puntos
                 val newPointsMap = mutableMapOf<Int, List<LatLng>>()
                 response.plan?.itineraries?.forEachIndexed { index, itinerary ->
                     val points = mutableListOf<LatLng>()
@@ -250,7 +300,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                 }
 
                 routePoints = newPointsMap
-                selectedItineraryIndex = 0 // Seleccionar la primera ruta por defecto
+                selectedItineraryIndex = 0
                 sheetState.expand()
             } catch (e: Exception) {
                 errorMessage = "Error al obtener ruta: ${e.localizedMessage}"
@@ -285,45 +335,48 @@ fun ExploreScreen(navController: NavHostController? = null) {
         }
     }
 
-    BottomSheetScaffold(
+    NarrowBottomSheetScaffold(
+        showSheet = shouldShowBottomSheet,
         scaffoldState = bottomSheetScaffoldState,
-        sheetPeekHeight = 160.dp,
+        sheetPeekHeight = if (showRouteSteps) 100.dp else 100.dp,
         sheetContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .navigationBarsPadding()
-                    .imePadding()
-            ) {
-                if (routePlan != null) {
+            if (routePlan != null) {
+                if (showRouteSteps && selectedItineraryForSteps != null) {
+                    RouteStepsView(
+                        itinerary = selectedItineraryForSteps!!,
+                        onBackClick = { showRouteSteps = false }
+                    )
+                } else {
                     RouteDetailsContent(
                         routePlan = routePlan!!,
                         selectedItineraryIndex = selectedItineraryIndex,
                         onItinerarySelected = { index ->
                             selectedItineraryIndex = index
-                            // Opcional: ajustar la cámara para la ruta seleccionada
                             updateCameraForSelectedItinerary(routePlan!!.plan?.itineraries?.get(index))
+                        },
+                        onShowSteps = { itinerary ->
+                            selectedItineraryForSteps = itinerary
+                            showRouteSteps = true
                         }
                     )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Busca una ruta para ver los detalles aquí.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "¿Cómo vas, Alex?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
                 }
             }
         }
-    ) {
+    ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
 
             GoogleMap(
@@ -365,6 +418,17 @@ fun ExploreScreen(navController: NavHostController? = null) {
                 }
             }
 
+            if (isLoadingRoute) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingSpinner(isLoading = true)
+                }
+            }
+
             val showOverlay = isOrigenFocused || isDestinoFocused
 
             if (showOverlay) {
@@ -381,7 +445,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                     .padding(16.dp)
                     .align(Alignment.TopCenter)
             ) {
-                if (routePlan == null) {
+                if (shouldShowInputs) {
                     OutlinedTextField(
                         value = origen,
                         onValueChange = { query ->
@@ -411,7 +475,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                         },
                         placeholder = {
                             Text(
-                                "Buscar origen",
+                                "Search origin",
                                 color = Color.Gray,
                                 fontSize = 16.sp
                             )
@@ -493,7 +557,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                             },
                             placeholder = {
                                 Text(
-                                    "Buscar destino",
+                                    "Search destination",
                                     color = Color.Gray,
                                     fontSize = 16.sp
                                 )
@@ -540,9 +604,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
                             singleLine = true
                         )
                     }
-                }
-
-                else {
+                } else if (routePlan != null) {
                         Column(
                             horizontalAlignment = Alignment.Start,
                             modifier = Modifier.fillMaxWidth()
@@ -578,13 +640,27 @@ fun ExploreScreen(navController: NavHostController? = null) {
                         }
                 }
 
-                if (suggestions.isNotEmpty() || destinoSuggestions.isNotEmpty()) {
+                if (isOrigenFocused || isDestinoFocused) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
                             .padding(horizontal = 8.dp)
                     ) {
+                        if (isOrigenFocused && userLocation != null && destinoLatLng != userLocation) {
+                            SuggestionItem(
+                                fullText = "Use current location",
+                                onClick = {
+                                    origen = "Ubicación actual"
+                                    origenLatLng = userLocation
+                                    suggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    updateCameraPosition(origenLatLng, destinoLatLng)
+                                }
+                            )
+                        }
+
                         suggestions.forEach { prediction ->
                             SuggestionItem(
                                 fullText = prediction.getFullText(null).toString(),
@@ -597,15 +673,27 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                     coroutineScope.launch {
                                         fetchPlaceLatLng(context, prediction.placeId)?.let {
                                             origenLatLng = it
-                                            updateCameraPosition(
-                                                origenLatLng,
-                                                destinoLatLng
-                                            )
+                                            updateCameraPosition(origenLatLng, destinoLatLng)
                                         }
                                     }
                                 }
                             )
                         }
+
+                        if (isDestinoFocused && userLocation != null && origenLatLng != userLocation) {
+                            SuggestionItem(
+                                fullText = "Use current location",
+                                onClick = {
+                                    destino = "Ubicación actual"
+                                    destinoLatLng = userLocation
+                                    destinoSuggestions = emptyList()
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    updateCameraPosition(origenLatLng, destinoLatLng)
+                                }
+                            )
+                        }
+
                         destinoSuggestions.forEach { prediction ->
                             SuggestionItem(
                                 fullText = prediction.getFullText(null).toString(),
@@ -618,25 +706,12 @@ fun ExploreScreen(navController: NavHostController? = null) {
                                     coroutineScope.launch {
                                         fetchPlaceLatLng(context, prediction.placeId)?.let {
                                             destinoLatLng = it
-                                            updateCameraPosition(
-                                                origenLatLng,
-                                                destinoLatLng
-                                            )
+                                            updateCameraPosition(origenLatLng, destinoLatLng)
                                         }
                                     }
                                 }
                             )
                         }
-                    }
-                }
-
-                if (isLoadingRoute) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
                     }
                 }
 
@@ -651,7 +726,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
                             color = Color.Red
                         )
                     }
-
                 }
             }
         }
@@ -740,220 +814,259 @@ fun decodePolyline(encoded: String): List<LatLng> {
     return poly
 }
 
-@Composable
-private fun RouteDetailsContent(
-    routePlan: RoutePlanResponse,
-    selectedItineraryIndex: Int,
-    onItinerarySelected: (Int) -> Unit) {
-
-    val scrollState = rememberScrollState()
-    var expandedRoute by remember { mutableStateOf(-1) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .verticalScroll(scrollState)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Suggested Routes:",
-                fontSize = 20.sp,
-                color = Color.Black,
-                style = TextStyle(
-                    fontFamily = AppTypography.h1.fontFamily,
-                    fontWeight = AppTypography.h1.fontWeight,
-                ),
-                modifier = Modifier
-                    .padding(horizontal = 5.dp, vertical = 5.dp)
-            )
-
-        }
-
-        Divider(
-            color = Color(0xFFE0E0E0),
-            thickness = 1.dp,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        routePlan.plan?.itineraries?.let { itineraries ->
-            val sortedRoutes = sortRoutesByDuration(itineraries)
-            if (sortedRoutes.isEmpty()) {
-                EmptyRouteContent()
-            } else {
-                sortedRoutes.forEachIndexed { index, itinerary ->
-                    RouteSummaryCard(
-                        itinerary = itinerary,
-                        index = index,
-                        expanded = expandedRoute == index,
-                        isSelected = index == selectedItineraryIndex,
-                        onClick = {
-                            expandedRoute = if (expandedRoute == index) -1 else index
-                            onItinerarySelected(index)
-                        },
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                }
-                if (expandedRoute != -1) {
-                    val itinerary = sortedRoutes[expandedRoute]
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFFFFFFF), shape = RoundedCornerShape(8.dp))
-                            .padding(16.dp)
-                    ) {
-                        itinerary.legs?.forEachIndexed { legIndex, leg ->
-                            RouteLegItem(
-                                leg = leg,
-                                isFirst = legIndex == 0,
-                                isLast = legIndex == (itinerary.legs.size - 1)
-                            )
-                            if (legIndex < itinerary.legs.size - 1) {
-                                ConnectionLine()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-fun sortRoutesByDuration(itineraries: List<Itinerary>): List<Itinerary> {
+fun sortRoutesByDuration(itineraries: List<Itinerary>): List<Pair<Int, Itinerary>> {
     val seen = mutableSetOf<String>()
 
-    val uniqueItineraries = itineraries.filter { itinerary ->
+    return itineraries.mapIndexedNotNull { index, itinerary ->
         val key = (itinerary.duration ?: 0).toString() + "_" +
                 (itinerary.legs?.map { it.route ?: "" }?.joinToString("-") ?: "")
         if (seen.contains(key)) {
-            false
+            null
         } else {
             seen.add(key)
-            true
+            index to itinerary
         }
-    }
-
-    return uniqueItineraries.sortedBy { it.duration ?: Int.MAX_VALUE }
+    }.sortedBy { (_, itinerary) -> itinerary.duration ?: Int.MAX_VALUE }
 }
 
 @Composable
-private fun RouteSummaryCard(
+fun RouteStepsView(
     itinerary: Itinerary,
-    index: Int,
-    expanded: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit
 ) {
-    val baseRouteColor = itinerary.legs
-        ?.mapNotNull { it.routeColor }
-        ?.firstOrNull()
-        ?.let { parseRouteColor(it) }
-        ?: Color(0xFFCCCCCC)
+    val steps = itinerary.legs ?: emptyList()
+    val enableAnimations = steps.size <= 10
 
-    val backgroundColor = if (isSelected) {
-        baseRouteColor.copy(alpha = 0.3f)
-    } else {
-        baseRouteColor.copy(alpha = 0.1f)
-    }
-
-    Card(
-        modifier = modifier
+    Column(
+        modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        shape = RoundedCornerShape(8.dp),
-        border = if (isSelected) BorderStroke(2.dp, baseRouteColor) else null
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_route_favorite),
-                    contentDescription = "Ruta",
-                    tint = baseRouteColor,
-                    modifier = Modifier.size(24.dp)
+                    painter = painterResource(id = R.drawable.ic_back),
+                    contentDescription = "Volver"
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Opción ${index + 1}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Tiempo total: ${(itinerary.duration?.div(60) ?: 0)} min",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
+            }
+            Text(
+                text = "Route details",
+                style = AppTypography.h2,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            itemsIndexed(
+                items = steps,
+                key = { _, step -> step.hashCode() }
+            ) { index, leg ->
+                val isLast = index == steps.lastIndex
+
+                RouteStepItem(
+                    leg = leg,
+                    isFirst = index == 0,
+                    isLast = isLast,
+                    showConnector = !isLast,
+                    delay = index * 90,
+                    enableAnimations = enableAnimations
+                )
+
+                if (!isLast) {
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun RouteStepItem(
+    leg: Leg,
+    isFirst: Boolean,
+    isLast: Boolean,
+    showConnector: Boolean,
+    delay: Int = 0,
+    enableAnimations: Boolean = true
+) {
+    val routeColor = parseRouteColor(leg.routeColor)
+    val iconSize = 38.dp
+    val lineWidth = 6.dp
+    val fullLineHeight = 48.dp
+    val horizontalPadding = 56.dp
+    val durationMinutes = leg.duration?.div(60) ?: 0
+
+    var isVisible by remember { mutableStateOf(!enableAnimations) }
+    val currentLeg by rememberUpdatedState(leg)
+
+    LaunchedEffect(currentLeg) {
+        if (enableAnimations) {
+            delay(delay.toLong())
+            isVisible = true
+        }
+    }
+
+    val springAnimSpecDp: AnimationSpec<Dp> =
+        if (enableAnimations) spring(dampingRatio = 0.7f, stiffness = 180f) else snap()
+
+    val tweenAnimSpecDp: AnimationSpec<Dp> =
+        if (enableAnimations) tween(durationMillis = 500, easing = FastOutSlowInEasing) else snap()
+
+    val tweenAnimSpecFloat: AnimationSpec<Float> =
+        if (enableAnimations) tween(durationMillis = 500, easing = FastOutSlowInEasing) else snap()
+
+    val floatSpringAnimSpec: AnimationSpec<Float> =
+        if (enableAnimations) spring(dampingRatio = 0.6f) else snap()
+
+    val lineHeight by animateDpAsState(
+        targetValue = if (isVisible && showConnector) fullLineHeight else 0.dp,
+        animationSpec = springAnimSpecDp,
+        label = "lineHeight"
+    )
+
+
+    val iconFloat by animateDpAsState(
+        targetValue = if (isVisible) 0.dp else 12.dp,
+        animationSpec = spring(dampingRatio = 0.6f),
+        label = "iconFloat"
+    )
+
+    val iconScale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.8f,
+        animationSpec = floatSpringAnimSpec,
+        label = "iconScale"
+    )
+
+    val contentSlide by animateDpAsState(
+        targetValue = if (isVisible) 0.dp else 16.dp,
+        animationSpec = tweenAnimSpecDp,
+        label = "contentSlide"
+    )
+
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tweenAnimSpecFloat,
+        label = "contentAlpha"
+    )
+
+    val timeText = remember(leg.startTime, leg.from?.name) {
+        leg.startTime?.let {
+            "${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it))} ${leg.from?.name ?: "Origen"}"
+        } ?: "--:-- Origen"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(
+            modifier = Modifier.width(horizontalPadding),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(iconSize)
+                    .offset(y = iconFloat)
+                    .scale(iconScale)
+                    .background(routeColor, shape = CircleShape)
+                    .padding(4.dp)
+                    .zIndex(1f),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
-                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Check,
-                    contentDescription = if (expanded) "Mostrar menos" else "Mostrar más",
-                    tint = Color.Gray
+                    painter = painterResource(
+                        id = when (leg.mode) {
+                            "WALK" -> R.drawable.ic_walk
+                            "SUBWAY" -> R.drawable.ic_tram
+                            "TRAM" -> R.drawable.ic_tram
+                            "BUS" -> R.drawable.ic_busline
+                            else -> R.drawable.ic_busline
+                        }
+                    ),
+                    contentDescription = leg.mode,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Trasbordos: ${itinerary.legs?.size?.minus(1) ?: 0}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-
-            val routeNames = itinerary.legs?.mapNotNull { it.route }?.distinct() ?: emptyList()
-            if (routeNames.isNotEmpty()) {
-                Text(
-                    text = "Rutas: ${routeNames.joinToString(", ")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
+            if (showConnector) {
+                Spacer(modifier = Modifier.height(1.dp))
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itinerary.legs?.forEach { leg ->
-                        val color = parseRouteColor(leg.routeColor)
-                        if (leg.mode == "WALK") {
-                            Box(
-                                modifier = Modifier
-                                    .background(Color.LightGray, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_walk),
-                                    contentDescription = "Caminata",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Color.Unspecified
+                        .width(lineWidth)
+                        .height(lineHeight)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    routeColor,
+                                    routeColor.copy(alpha = 0.8f)
                                 )
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .background(color, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = leg.route ?: "N/A",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
+                            ),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp, top = 8.dp)
+                .offset(x = contentSlide)
+                .alpha(contentAlpha)
+        ) {
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(
+                    animationSpec = tween(400, 100, easing = LinearOutSlowInEasing)
+                ) + slideInVertically(
+                    animationSpec = tween(500, 100)
+                ) { height -> height / 4 },
+                exit = fadeOut()
+            ) {
+                Column {
+                    Text(
+                        text = timeText,
+                        style = AppTypography.body1.copy(fontWeight = FontWeight.SemiBold),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    when (leg.mode) {
+                        "WALK" -> {
+                            Text(
+                                text = "Walk for $durationMinutes min",
+                                style = AppTypography.body2.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                                 )
-                            }
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = "Take ${leg.route ?: "transport"}",
+                                style = AppTypography.body2.copy(
+                                    color = routeColor,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            Text(
+                                text = "To ${leg.to?.name ?: "destination"}",
+                                style = AppTypography.body2.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
+                            )
                         }
                     }
                 }
@@ -962,108 +1075,6 @@ private fun RouteSummaryCard(
     }
 }
 
-@Composable
-fun RouteLegItem(leg: Leg, isFirst: Boolean, isLast: Boolean = false) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-            .clickable { expanded = !expanded }
-            .background(color = if (expanded) Color(0xFFE0F7FA) else Color.Transparent)
-            .padding(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .background(
-                        color = parseRouteColor(leg.routeColor),
-                        shape = CircleShape
-                    )
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isFirst) "Desde: ${leg.from?.name ?: "Desconocido"}"
-                    else if (isLast) "Hasta: ${leg.to?.name ?: "Desconocido"}"
-                    else "Parada: ${leg.from?.name ?: "Desconocido"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isFirst || isLast) FontWeight.SemiBold else FontWeight.Normal
-                )
-                leg.startTime?.let {
-                    Text(
-                        text = "Salida: ${SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(it))}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.padding(start = 28.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(
-                    id = when (leg.mode) {
-                        "BUS" -> R.drawable.ic_route_favorite
-                        "WALK" -> R.drawable.ic_route_favorite
-                        "SUBWAY" -> R.drawable.ic_route_favorite
-                        else -> R.drawable.ic_route_favorite
-                    }
-                ),
-                contentDescription = leg.mode,
-                modifier = Modifier.size(16.dp),
-                tint = parseRouteColor(leg.routeColor)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-
-            val modeDisplayName = when (leg.mode) {
-                "BUS" -> leg.route ?: "Bus"
-                "SUBWAY" -> "Metro"
-                "WALK" -> "Caminata"
-                else -> leg.mode ?: "Transporte"
-            }
-
-            Text(
-                text = "$modeDisplayName - ${leg.duration?.div(60) ?: "?"} min",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-
-        if (expanded) {
-            val polyline = leg.legGeometry?.points
-            val decodedPoints = polyline?.let { decodePolyline(it) }
-            decodedPoints?.let { points ->
-                Text(
-                    text = "Puntos decodificados:",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
-                )
-                points.take(5).forEach { point ->
-                    Text(
-                        text = "(${point.latitude}, ${point.longitude})",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.DarkGray
-                    )
-                }
-            } ?: Text("No hay polyline disponible", color = Color.Gray)
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Ruta: ${leg.route ?: "No disponible"}", style = MaterialTheme.typography.bodySmall)
-            Text("Puntos de geometría: ${leg.legGeometry?.points ?: "No disponible"}", style = MaterialTheme.typography.bodySmall)
-            Text("Desde: ${leg.from?.name ?: "Desconocido"}", style = MaterialTheme.typography.bodySmall)
-            Text("Hasta: ${leg.to?.name ?: "Desconocido"}", style = MaterialTheme.typography.bodySmall)
-            Text("Duración en segundos: ${leg.duration ?: "No disponible"}", style = MaterialTheme.typography.bodySmall)
-            Text("Hora inicio: ${leg.startTime?.let { SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date(it)) } ?: "No disponible"}", style = MaterialTheme.typography.bodySmall)
-            Text("Hora fin: ${leg.endTime?.let { SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date(it)) } ?: "No disponible"}", style = MaterialTheme.typography.bodySmall)
-        }
-    }
-}
 
 @Composable
 private fun EmptyRouteContent() {
@@ -1080,23 +1091,12 @@ private fun EmptyRouteContent() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No service outside GDL metro area.",
+            text = "Invalid route",
             fontSize = 16.sp,
             color = Color.Gray,
             fontWeight = FontWeight.Medium
         )
     }
-}
-
-@Composable
-private fun ConnectionLine() {
-    Box(
-        modifier = Modifier
-            .padding(start = 7.dp)
-            .width(2.dp)
-            .height(24.dp)
-            .background(Color.Gray.copy(alpha = 0.5f))
-    )
 }
 
 fun parseAddress(fullText: String): Pair<String, String> {
@@ -1159,5 +1159,180 @@ fun parseRouteColor(routeColor: String?): Color {
         Color(android.graphics.Color.parseColor("#${routeColor ?: "000000"}"))
     } catch (e: Exception) {
         Color.Gray
+    }
+}
+
+@Composable
+private fun RouteSummaryCard(
+    itinerary: Itinerary,
+    index: Int,
+    expanded: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+){
+    val baseRouteColor = itinerary.legs
+        ?.mapNotNull { it.routeColor }
+        ?.firstOrNull()
+        ?.let { parseRouteColor(it) }
+        ?: Color(0xFFCCCCCC)
+
+    val backgroundColor = if (isSelected) {
+        baseRouteColor.copy(alpha = 0.3f)
+    } else {
+        baseRouteColor.copy(alpha = 0.1f)
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        shape = RoundedCornerShape(8.dp),
+        border = if (isSelected) BorderStroke(2.dp, baseRouteColor) else null
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_route_favorite),
+                    contentDescription = "Ruta",
+                    tint = baseRouteColor,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Option ${index + 1}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Total time: ${(itinerary.duration?.div(60) ?: 0)} min",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Check,
+                    contentDescription = if (expanded) "Mostrar menos" else "Mostrar más",
+                    tint = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Transfers: ${itinerary.legs?.size?.minus(1) ?: 0}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+
+            val routeNames = itinerary.legs?.mapNotNull { it.route }?.distinct() ?: emptyList()
+            if (routeNames.isNotEmpty()) {
+                Text(
+                    text = "Routes: ${routeNames.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itinerary.legs?.forEach { leg ->
+                        val color = parseRouteColor(leg.routeColor)
+                        if (leg.mode == "WALK") {
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.LightGray, RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_walk),
+                                    contentDescription = "Caminata",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.Unspecified
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .background(color, RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = leg.route ?: "N/A",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RouteDetailsContent(
+    routePlan: RoutePlanResponse,
+    selectedItineraryIndex: Int,
+    onItinerarySelected: (Int) -> Unit,
+    onShowSteps: (Itinerary) -> Unit
+) {
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .verticalScroll(scrollState)
+    ) {
+        Text(
+            text = "Suggested Routes:",
+            fontSize = 20.sp,
+            color = Color.Black,
+            style = TextStyle(
+                fontFamily = AppTypography.h1.fontFamily,
+                fontWeight = AppTypography.h1.fontWeight,
+            ),
+            modifier = Modifier
+                .padding(horizontal = 5.dp, vertical = 5.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        routePlan.plan?.itineraries?.let { itineraries ->
+            val sortedRoutes = sortRoutesByDuration(itineraries)
+
+            if (sortedRoutes.isEmpty()) {
+                EmptyRouteContent()
+            } else {
+                sortedRoutes.forEach { (originalIndex, itinerary) ->
+                    val sortedIndex = sortedRoutes.indexOf(originalIndex to itinerary)
+                    RouteSummaryCard(
+                        itinerary = itinerary,
+                        index = sortedIndex,
+                        expanded = false,
+                        isSelected = originalIndex == selectedItineraryIndex,
+                        onClick = {
+                            onItinerarySelected(originalIndex)
+                            onShowSteps(itinerary)
+                        },
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
+            }
+        }
     }
 }
