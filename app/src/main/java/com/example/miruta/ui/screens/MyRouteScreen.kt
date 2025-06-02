@@ -66,11 +66,13 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.LocalTime
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.firebase.annotations.concurrent.Background
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -1543,6 +1545,15 @@ fun RouteButtons(
                 )
             }
         }
+    }
+}
+
+object PlacesClientProvider {
+    fun getClient(context: Context): PlacesClient {
+        if (!Places.isInitialized()) {
+            Places.initialize(context.applicationContext, "AIzaSyBNbNDkpZPUO-jY3TzUUW_WqNmstyy3AuY", Locale.getDefault())
+        }
+        return Places.createClient(context)
     }
 }
 
