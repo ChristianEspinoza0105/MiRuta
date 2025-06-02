@@ -69,12 +69,10 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
     val screenWidth = configuration.screenWidthDp.dp
     val context = LocalContext.current
 
-    // Cargar datos del usuario al iniciar
     LaunchedEffect(Unit) {
         authViewModel.loadDriverData()
     }
 
-    // Observar cambios en el ViewModel y reflejarlos
     LaunchedEffect(authViewModel.userName, authViewModel.userEmail, authViewModel.userPhone, authViewModel.photoIndex, authViewModel.plates, authViewModel.route) {
         name = authViewModel.userName
         phone = authViewModel.userPhone
@@ -117,13 +115,6 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = name,
-                    fontSize = 28.sp,
-                    color = Color.White,
-                    style = AppTypography.h1,
-                    textAlign = TextAlign.Center
-                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -235,44 +226,6 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                focusedBorderColor = Color(0xFF00933B),
-                                unfocusedBorderColor = Color(0xFFE7E7E7),
-                                backgroundColor = Color.White
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = plates,
-                            onValueChange = { plates = it },
-                            label = {
-                                Text("Placas", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                focusedBorderColor = Color(0xFF00933B),
-                                unfocusedBorderColor = Color(0xFFE7E7E7),
-                                backgroundColor = Color.White
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = route,
-                            onValueChange = { route = it },
-                            label = {
-                                Text("Ruta", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),

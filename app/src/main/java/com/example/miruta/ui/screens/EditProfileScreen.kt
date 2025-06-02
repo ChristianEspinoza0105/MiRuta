@@ -112,13 +112,6 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = authViewModel.userName,
-                    fontSize = 28.sp,
-                    color = Color.White,
-                    style = AppTypography.h1,
-                    textAlign = TextAlign.Center
-                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

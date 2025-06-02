@@ -115,6 +115,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
     implementation ("androidx.compose.foundation:foundation:1.6.0")
     implementation ("androidx.compose.animation:animation:1.6.0")
+    implementation ("androidx.compose.material3:material3:1.1.1")
+    implementation ("androidx.compose.material3:material3-window-size-class:1.1.1")
 
     // Otras bibliotecas de Jetpack
     implementation("androidx.core:core-ktx:1.10.1")

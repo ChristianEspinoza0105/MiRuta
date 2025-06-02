@@ -50,7 +50,6 @@ fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel
 
     var selectedAvatar by remember { mutableStateOf(avatars[viewModelAvatarIndex]) }
 
-    // Escuchar cambios en photoIndex del ViewModel
     LaunchedEffect(viewModelAvatarIndex) {
         selectedAvatar = avatars[viewModelAvatarIndex]
     }
@@ -60,7 +59,6 @@ fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Fila superior: flecha + título centrado
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -76,14 +74,13 @@ fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel
             Text(
                 text = "Select Image",
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
+                fontSize = 28.sp,
                 modifier = Modifier.weight(1f),
             )
         }
 
         Spacer(modifier = Modifier.height(64.dp))
 
-        // Imagen seleccionada (previsualización)
         Box(
             modifier = Modifier
                 .size(190.dp)
@@ -103,9 +100,8 @@ fun SelectImageScreen(navController: NavController, authViewModel: AuthViewModel
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp)) // Aumenté el espacio aquí de 24.dp a 32.dp
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Grilla de imágenes
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             contentPadding = PaddingValues(8.dp),

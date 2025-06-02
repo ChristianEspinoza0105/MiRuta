@@ -89,7 +89,7 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel = h
 
                 Text(
                     text = authViewModel.userName,
-                    fontSize = 28.sp,
+                    fontSize = 38.sp,
                     color = Color.White,
                     fontFamily = AppTypography.h1.fontFamily,
                     fontWeight = AppTypography.h1.fontWeight,
