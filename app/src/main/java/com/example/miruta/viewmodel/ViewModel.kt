@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.compose.runtime.State
 import com.example.miruta.data.ml.RutaClassifier
 import com.example.miruta.data.models.ChatMessage
 import com.example.miruta.data.repository.AuthRepository
@@ -22,9 +21,6 @@ import javax.inject.Inject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.miruta.data.gtfs.parseRoutesFromGTFS
-import com.example.miruta.data.models.Route
-import kotlinx.coroutines.Dispatchers
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -757,22 +753,6 @@ class AuthViewModel @Inject constructor(
 
                 onMessagesChanged(messages)
             }
-    }
-
-    //Rutas GTFS
-    private val _routes = mutableStateOf<List<Route>>(emptyList())
-    val routes: State<List<Route>> = _routes
-    fun loadRoutes(context: Context) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val routesList = context.assets.open("rutas_gtfs.zip").use {
-                    parseRoutesFromGTFS(it)
-                }
-                _routes.value = routesList
-            } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error loading routes", e)
-            }
-        }
     }
 
 }
