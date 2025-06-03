@@ -51,14 +51,14 @@ fun RecoverPasswordScreen(navController: NavController) {
 
             Text(
                 text = "Recover your password",
-                style = AppTypography.h1.copy(fontSize = 24.sp),
+                style = AppTypography.headlineLarge.copy(fontSize = 24.sp),
                 color = Color.Black,
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = "Enter your email address to receive a recovery code.",
-                style = AppTypography.body1.copy(fontSize = 18.sp),
+                style = AppTypography.bodyLarge.copy(fontSize = 18.sp),
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
@@ -77,7 +77,7 @@ fun RecoverPasswordScreen(navController: NavController) {
                         .fillMaxWidth()
                         .align(Alignment.Center)
                         .onFocusChanged { isFieldFocused = it.isFocused },
-                    textStyle = AppTypography.body1.copy(
+                    textStyle = AppTypography.bodyLarge.copy(
                         fontSize = 18.sp,
                         color = Color.Black,
                         textAlign = TextAlign.Center
@@ -95,7 +95,7 @@ fun RecoverPasswordScreen(navController: NavController) {
                             if (email.isEmpty() && !isFieldFocused) {
                                 Text(
                                     text = "example@email.com",
-                                    style = AppTypography.body1.copy(
+                                    style = AppTypography.bodyLarge.copy(
                                         fontSize = 18.sp,
                                         color = Color.Gray
                                     ),
@@ -140,13 +140,13 @@ fun RecoverPasswordScreen(navController: NavController) {
             ) {
                 Text(
                     text = "Send Verification Code",
-                    style = AppTypography.h1.copy(fontSize = 18.sp)
+                    style = AppTypography.headlineLarge.copy(fontSize = 18.sp)
                 )
             }
 
             Text(
                 text = "Back to login",
-                style = AppTypography.body1.copy(fontSize = 16.sp),
+                style = AppTypography.bodyLarge.copy(fontSize = 16.sp),
                 color = Color.Gray,
                 modifier = Modifier.clickable {
                     navController.popBackStack()
