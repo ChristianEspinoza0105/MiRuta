@@ -11,12 +11,9 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -73,7 +70,6 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.libraries.places.api.Places
@@ -123,31 +119,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miruta.data.models.DriverLocation
-import com.example.miruta.data.repository.LiveLocationRepository
-import com.example.miruta.data.repository.LiveLocationSharing
 import com.example.miruta.data.repository.LiveLocationSharingDrivers
-import com.example.miruta.ui.components.ActiveDriversMarkers
 import com.example.miruta.ui.components.DriverInfoCard
 import com.example.miruta.ui.components.LoadingSpinner
 import com.example.miruta.ui.theme.PoppinsFontFamily
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.utils.getLocationFlow
 import com.example.miruta.viewmodel.LocationViewModel
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.Dot
 import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
 import com.google.firebase.auth.FirebaseAuth
-import com.google.maps.android.compose.rememberMarkerState
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -206,6 +192,33 @@ fun ExploreScreen(
             if (isSharingLocation) {
                 liveLocationSharing.stopSharing()
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.checkUserRole()
+
+        try {
+            currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    val exception = task.exception
+                    if (exception is FirebaseAuthInvalidUserException) {
+                        FirebaseAuth.getInstance().signOut()
+
+                        Toast.makeText(
+                            context,
+                            "Tu sesión ha expirado. Inicia sesión nuevamente.",
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                        navController?.navigate("login_screen") {
+                            popUpTo(0)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ExploreScreen", "Error verificando usuario: ${e.message}")
         }
     }
 
@@ -401,9 +414,13 @@ fun ExploreScreen(
                 isLoading = false
             }
         } else {
-            locationPermissionsState.launchMultiplePermissionRequest()
+            userLocation = null
+            markersState.clear()
+            updateCameraPosition(null, null)
+            isLoading = false
         }
     }
+
 
     NarrowBottomSheetScaffold(
         showSheet = shouldShowBottomSheet,
@@ -484,14 +501,6 @@ fun ExploreScreen(
                             )
                         }
                     }
-                }
-
-                userLocation?.let {
-                    Marker(
-                        state = MarkerState(position = it),
-                        title = "Mi ubicación",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                    )
                 }
 
                 markersState.values.forEach { markerState ->
@@ -841,6 +850,10 @@ fun ExploreScreen(
                     isSharing = isSharingLocation,
                     onToggleSharing = { sharing ->
                         isSharingLocation = sharing
+                        if (!sharing) {
+                            markersState.clear()
+                            selectedDriver = null
+                        }
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -1517,17 +1530,13 @@ private fun SharingLocationFAB(
                 if (!isSharing) {
                     currentUser?.let { user ->
                         try {
-                            // 1. Inicializar
                             locationViewModel.initializeSharing(user.uid, user.displayName ?: "Conductor")
 
-                            // 2. Obtener flujo de ubicación
                             val locationFlow = getLocationFlow(context)
 
-                            // 3. Comenzar a compartir
                             locationViewModel.startSharingLocation(
                                 locationFlow = locationFlow,
                                 onError = { error ->
-                                    // Si hay error, revertir el estado
                                     scope.launch(Dispatchers.Main) {
                                         Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                                         onToggleSharing(false)
@@ -1535,7 +1544,6 @@ private fun SharingLocationFAB(
                                 }
                             )
 
-                            // Solo actualizar estado si todo salió bien
                             onToggleSharing(true)
                         } catch (e: Exception) {
                             scope.launch(Dispatchers.Main) {
@@ -1554,8 +1562,8 @@ private fun SharingLocationFAB(
                         }
                     }
                 } else {
-                    // Detener el compartir
                     locationViewModel.stopSharingLocation()
+                    locationViewModel.clearDriverMarker()
                     onToggleSharing(false)
                 }
             }

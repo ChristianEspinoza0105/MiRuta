@@ -4,6 +4,9 @@ import android.Manifest
 import android.location.Location
 import android.os.Looper
 import androidx.annotation.RequiresPermission
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.miruta.data.models.DriverLocation
@@ -59,4 +62,9 @@ class LocationViewModel @Inject constructor(
         liveLocationSharing.stopSharing()
     }
 
+    var driverMarkerPosition by mutableStateOf<LatLng?>(null)
+
+    fun clearDriverMarker() {
+        driverMarkerPosition = null
+    }
 }

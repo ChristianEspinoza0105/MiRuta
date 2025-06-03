@@ -59,31 +59,27 @@ class LiveLocationSharingDrivers @Inject constructor(
     fun startSharing(
         locationFlow: Flow<Location>,
         onError: (String) -> Unit
-    ) {
-        if (!isInitialized) {
-            onError("LiveLocation no inicializado. Llama a initialize() primero.")
-            return
-        }
+    ): Job {
+        val user = auth.currentUser ?: return Job()
+        val driverId = user.uid
+        val driverName = user.displayName ?: "Conductor"
 
-        stopSharing() // Detener cualquier compartición previa
+        val docRef = firestore.collection("drivers").document(driverId)
+        liveLocationRef = docRef
 
         sharingJob = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                locationFlow.collect { location ->
-                    try {
-                        updateLocation(location)
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            onError("Error actualizando ubicación: ${e.localizedMessage}")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    onError("Error en el flujo de ubicación: ${e.localizedMessage}")
-                }
+            locationFlow.collect { location ->
+                val data = mapOf(
+                    "driverId" to driverId,
+                    "driverName" to driverName,
+                    "latitude" to location.latitude,
+                    "longitude" to location.longitude,
+                    "lastUpdate" to System.currentTimeMillis()
+                )
+                docRef.set(data, SetOptions.merge())
             }
         }
+        return sharingJob!!
     }
 
     private suspend fun updateLocation(location: Location) {
