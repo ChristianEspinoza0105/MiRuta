@@ -37,7 +37,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.miruta.ui.components.ErrorMessageCard
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -61,6 +63,7 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -86,6 +89,21 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
             .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
+        errorMessage?.let { message ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .zIndex(2f)
+                    .align(Alignment.TopCenter)
+            ) {
+                ErrorMessageCard(
+                    message = message,
+                    reason = "Validation Error",
+                    onDismiss = { errorMessage = null }
+                )
+            }
+        }
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -174,12 +192,8 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
-                            label = {
-                                Text("Nombre", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                            label = { Text("Name", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -192,15 +206,17 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
 
                         OutlinedTextField(
                             value = phone,
-                            onValueChange = { phone = it },
-                            label = {
-                                Text("Teléfono", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
+                            onValueChange = {
+                                if (it.length <= 10 && it.all { char -> char.isDigit() }) {
+                                    phone = it
+                                }
                             },
+                            label = { Text("Phone", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
@@ -213,12 +229,8 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
-                            label = {
-                                Text("Correo electrónico", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                            label = { Text("Email", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -232,19 +244,43 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
 
                         Button(
                             onClick = {
-                                authViewModel.updateUserData(
-                                    name = name,
-                                    phone = phone,
-                                    email = email,
-                                    onResult = { success ->
-                                        if (success) {
-                                            Toast.makeText(context, "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
-                                            navController.popBackStack()
-                                        } else {
-                                            Toast.makeText(context, "Error al actualizar datos", Toast.LENGTH_SHORT).show()
-                                        }
+                                val trimmedName = name.trim()
+                                val trimmedPhone = phone.trim()
+                                val trimmedEmail = email.trim()
+
+                                when {
+                                    trimmedName.isEmpty() -> {
+                                        errorMessage = "Name is required"
                                     }
-                                )
+                                    trimmedName.length < 2 -> {
+                                        errorMessage = "Name must be at least 2 characters"
+                                    }
+                                    trimmedPhone.isEmpty() -> {
+                                        errorMessage = "Phone number is required"
+                                    }
+                                    trimmedPhone.length != 10 -> {
+                                        errorMessage = "Phone number must be 10 digits"
+                                    }
+                                    !isValidEmail(trimmedEmail) -> {
+                                        errorMessage = "Invalid email format"
+                                    }
+                                    else -> {
+                                        errorMessage = null
+                                        authViewModel.updateUserData(
+                                            name = trimmedName,
+                                            phone = trimmedPhone,
+                                            email = trimmedEmail,
+                                            onResult = { success ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Data updated successfully", Toast.LENGTH_SHORT).show()
+                                                    navController.popBackStack()
+                                                } else {
+                                                    Toast.makeText(context, "Error updating data", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -252,7 +288,7 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text("Guardar", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
+                            Text("Save", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
@@ -261,4 +297,8 @@ fun EditProfileScreen(navController: NavController, authViewModel: AuthViewModel
             }
         }
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

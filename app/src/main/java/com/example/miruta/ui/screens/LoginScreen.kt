@@ -35,6 +35,7 @@ import com.example.miruta.ui.viewmodel.AuthViewModel
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
+import com.example.miruta.ui.components.ErrorMessageCard
 
 @Composable
 fun LoginScreen(
@@ -43,6 +44,7 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val loginState by authViewModel.loginState.collectAsState()
     val context = LocalContext.current
@@ -57,10 +59,26 @@ fun LoginScreen(
                     launchSingleTop = true
                 }
             } else {
-                Toast.makeText(context, state, Toast.LENGTH_LONG).show()
+                errorMessage = state
             }
         }
     }
+
+    errorMessage?.let { message ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .zIndex(2f)
+        ) {
+            ErrorMessageCard(
+                message = message,
+                reason = "Validation Error",
+                onDismiss = { errorMessage = null }
+            )
+        }
+    }
+
 
     ConstraintLayout(
         modifier = Modifier
@@ -221,14 +239,20 @@ fun LoginScreen(
                         val trimmedEmail = email.trim()
                         val trimmedPassword = password.trim()
 
-                        if (trimmedEmail.isEmpty()) {
-                            Toast.makeText(context, "El correo electrónico no puede estar vacío.", Toast.LENGTH_SHORT).show()
-                        } else if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
-                            Toast.makeText(context, "Correo electrónico no válido.", Toast.LENGTH_SHORT).show()
-                        } else if (trimmedPassword.isEmpty()) {
-                            Toast.makeText(context, "La contraseña no puede estar vacía.", Toast.LENGTH_SHORT).show()
-                        } else {
-                            authViewModel.login(trimmedEmail, trimmedPassword)
+                        when {
+                            trimmedEmail.isEmpty() -> {
+                                errorMessage = "The email is required."
+                            }
+                            !trimmedEmail.contains("@") || !trimmedEmail.contains(".") -> {
+                                errorMessage = "Invalid email format."
+                            }
+                            trimmedPassword.isEmpty() -> {
+                                errorMessage = "The password is required."
+                            }
+                            else -> {
+                                errorMessage = null
+                                authViewModel.login(trimmedEmail, trimmedPassword)
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),

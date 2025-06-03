@@ -37,7 +37,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.miruta.ui.components.ErrorMessageCard
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 
@@ -63,10 +65,8 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
     var email by remember { mutableStateOf("") }
     var plates by remember { mutableStateOf("") }
     var route by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -89,6 +89,23 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
             .fillMaxSize()
             .background(Color(0xFF00933B))
     ) {
+        // Show error card
+        errorMessage?.let { message ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .zIndex(2f)
+                    .align(Alignment.TopCenter)
+            ) {
+                ErrorMessageCard(
+                    message = message,
+                    reason = "Validation Error",
+                    onDismiss = { errorMessage = null }
+                )
+            }
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -112,9 +129,6 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         contentScale = ContentScale.Crop
                     )
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -129,10 +143,7 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         .fillMaxWidth()
                         .fillMaxHeight(0.90f)
                         .align(Alignment.BottomCenter)
-                        .background(
-                            color = Color(0xFFE0E0E0),
-                            shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
-                        )
+                        .background(Color(0xFFE0E0E0), RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
                 ) {}
 
                 Column(
@@ -140,10 +151,7 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         .fillMaxWidth(0.88f)
                         .fillMaxHeight()
                         .align(Alignment.TopCenter)
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp)
-                        )
+                        .background(Color.White, RoundedCornerShape(topStart = 50.dp, topEnd = 50.dp))
                         .verticalScroll(rememberScrollState())
                         .padding(bottom = 60.dp)
                 ) {
@@ -161,7 +169,7 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Editar Perfil",
+                            text = "Edit Profile",
                             color = Color.Black,
                             fontSize = 24.sp,
                             style = AppTypography.h1
@@ -179,12 +187,8 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
-                            label = {
-                                Text("Nombre", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                            label = { Text("Name", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
@@ -197,15 +201,17 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
 
                         OutlinedTextField(
                             value = phone,
-                            onValueChange = { phone = it },
-                            label = {
-                                Text("Teléfono", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
+                            onValueChange = {
+                                if (it.length <= 10 && it.all { char -> char.isDigit() }) {
+                                    phone = it
+                                }
                             },
+                            label = { Text("Phone", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
@@ -218,12 +224,8 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
-                            label = {
-                                Text("Correo electrónico", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                            label = { Text("Email", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray)) },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -237,29 +239,51 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
 
                         Button(
                             onClick = {
-                                authViewModel.updateDriverData(
-                                    name = name,
-                                    phone = phone,
-                                    email = email,
-                                    route = route,
-                                    plates = plates,
-                                    onResult = { success ->
-                                        if (success) {
-                                            Toast.makeText(context, "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
-                                            navController.popBackStack()
-                                        } else {
-                                            Toast.makeText(context, "Error al actualizar datos", Toast.LENGTH_SHORT).show()
-                                        }
+                                val trimmedName = name.trim()
+                                val trimmedPhone = phone.trim()
+                                val trimmedEmail = email.trim()
+
+                                when {
+                                    trimmedName.isEmpty() -> {
+                                        errorMessage = "Name is required"
                                     }
-                                )
+                                    trimmedName.length < 2 -> {
+                                        errorMessage = "Name must be at least 2 characters"
+                                    }
+                                    trimmedPhone.isEmpty() -> {
+                                        errorMessage = "Phone number is required"
+                                    }
+                                    trimmedPhone.length != 10 -> {
+                                        errorMessage = "Phone number must be 10 digits"
+                                    }
+                                    !isValidEmail(trimmedEmail) -> {
+                                        errorMessage = "Invalid email format"
+                                    }
+                                    else -> {
+                                        errorMessage = null
+                                        authViewModel.updateDriverData(
+                                            name = trimmedName,
+                                            phone = trimmedPhone,
+                                            email = trimmedEmail,
+                                            route = route,
+                                            plates = plates,
+                                            onResult = { success ->
+                                                if (success) {
+                                                    Toast.makeText(context, "Data updated successfully", Toast.LENGTH_SHORT).show()
+                                                    navController.popBackStack()
+                                                } else {
+                                                    Toast.makeText(context, "Error updating data", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text("Guardar", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
+                            Text("Save", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
@@ -268,4 +292,8 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
             }
         }
     }
+}
+
+private fun isValidEmail(email: String): Boolean {
+    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }

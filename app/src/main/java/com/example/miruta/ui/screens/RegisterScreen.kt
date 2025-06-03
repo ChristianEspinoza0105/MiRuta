@@ -34,12 +34,14 @@ import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import androidx.compose.material3.TextFieldDefaults
+import com.example.miruta.ui.components.ErrorMessageCard
 
 @Composable
 fun RegisterScreen(
 navController: NavController,
 authViewModel: AuthViewModel = hiltViewModel()
 ) {
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -53,6 +55,23 @@ authViewModel: AuthViewModel = hiltViewModel()
     val horizontalPadding = (screenWidth.value * 0.1).dp
     val fieldCornerRadius = (screenWidth.value * 0.05).dp
     val textFieldFontSize = (screenWidth.value * 0.04).sp
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    errorMessage?.let { message ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .zIndex(2f)
+        ) {
+            ErrorMessageCard(
+                message = message,
+                reason = "Validation Error",
+                onDismiss = { errorMessage = null }
+            )
+        }
+    }
 
     ConstraintLayout(
         modifier = Modifier
@@ -163,7 +182,11 @@ authViewModel: AuthViewModel = hiltViewModel()
 
                 TextField(
                     value = phone,
-                    onValueChange = { phone = it },
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() } && it.length <= 10) {
+                            phone = it
+                        }
+                    },
                     label = { Text("Phone number", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -247,17 +270,26 @@ authViewModel: AuthViewModel = hiltViewModel()
                         val trimmedPhone = phone.trim()
 
                         when {
-                            trimmedName.isEmpty() -> context?.let {
-                                Toast.makeText(it, "Nombre requerido", Toast.LENGTH_SHORT).show()
+                            trimmedName.isEmpty() -> {
+                                errorMessage = "Name is required"
                             }
-                            trimmedPhone.isEmpty() -> context?.let {
-                                Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT).show()
+                            trimmedName.length < 2 -> {
+                                errorMessage = "Name must be at least 2 characters"
                             }
-                            !isValidEmail(trimmedEmail) -> context?.let {
-                                Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
+                            trimmedPhone.isEmpty() -> {
+                                errorMessage = "Phone number is required"
                             }
-                            trimmedPassword.length < 6 -> context?.let {
-                                Toast.makeText(it, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                            trimmedPhone.length != 10 -> {
+                                errorMessage = "Phone number must be 10 digits"
+                            }
+                            !isValidEmail(trimmedEmail) -> {
+                                errorMessage = "Invalid email format"
+                            }
+                            trimmedPassword.length < 8 -> {
+                                errorMessage = "Password must be at least 8 characters"
+                            }
+                            !trimmedPassword.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).+$")) -> {
+                                errorMessage = "Password must contain at least one uppercase letter and one number"
                             }
                             else -> {
                                 authViewModel.register(trimmedEmail, trimmedPassword, trimmedName, trimmedPhone)

@@ -2,7 +2,6 @@ package com.example.miruta.ui.screens
 
 import android.util.Log
 import android.util.Patterns
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,6 +42,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.miruta.R
+import com.example.miruta.ui.components.ErrorMessageCard
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
@@ -55,7 +55,6 @@ import com.example.miruta.data.models.Route
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterDriverScreen(
@@ -67,12 +66,13 @@ fun RegisterDriverScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var plates by remember { mutableStateOf("") }
-    val context = LocalContext.current
     var route by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var expanded by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -98,6 +98,21 @@ fun RegisterDriverScreen(
         authViewModel.resetRegisterState()
     }
 
+    errorMessage?.let { message ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .zIndex(2f)
+        ) {
+            ErrorMessageCard(
+                message = message,
+                reason = "Validation Error",
+                onDismiss = { errorMessage = null }
+            )
+        }
+    }
+
     ConstraintLayout(
         modifier = Modifier
             .fillMaxSize()
@@ -118,10 +133,6 @@ fun RegisterDriverScreen(
                 .background(Color(0xFF00933B))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                val configuration = LocalConfiguration.current
-                val screenWidth = configuration.screenWidthDp.dp
-                val screenHeight = configuration.screenHeightDp.dp
-
                 val titleFontSize = (screenWidth.value * 0.10).sp
                 val subtitleFontSize = (screenWidth.value * 0.04).sp
                 Text(
@@ -171,7 +182,6 @@ fun RegisterDriverScreen(
                     .padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-
                 Text(
                     text = "Sign up",
                     color = Color(0xFF00933B),
@@ -184,7 +194,6 @@ fun RegisterDriverScreen(
                         .fillMaxWidth()
                         .padding(start = 45.dp, top = 10.dp)
                 )
-
 
                 TextField(
                     value = name,
@@ -207,14 +216,18 @@ fun RegisterDriverScreen(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
                         focusedLabelColor = Color.Black,
-                        ),
+                    ),
                     shape = RoundedCornerShape(50),
                     singleLine = true,
                 )
 
                 TextField(
                     value = phone,
-                    onValueChange = { phone = it },
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() } && it.length <= 10) {
+                            phone = it
+                        }
+                    },
                     label = { Text("Phone", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -233,7 +246,7 @@ fun RegisterDriverScreen(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
                         focusedLabelColor = Color.Black,
-                        ),
+                    ),
                     shape = RoundedCornerShape(50),
                     singleLine = true
                 )
@@ -241,7 +254,7 @@ fun RegisterDriverScreen(
                 TextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email", fontSize = textFieldFontSize)  },
+                    label = { Text("Email", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding, vertical = 8.dp)
@@ -259,7 +272,7 @@ fun RegisterDriverScreen(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
                         focusedLabelColor = Color.Black,
-                        ),
+                    ),
                     shape = RoundedCornerShape(50),
                     singleLine = true
                 )
@@ -327,8 +340,12 @@ fun RegisterDriverScreen(
 
                 TextField(
                     value = plates,
-                    onValueChange = { plates = it },
-                    label = { Text("Plates", fontSize = textFieldFontSize)   },
+                    onValueChange = {
+                        if (it.length <= 7) {
+                            plates = it.uppercase()
+                        }
+                    },
+                    label = { Text("Plates", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding, vertical = 8.dp)
@@ -346,16 +363,15 @@ fun RegisterDriverScreen(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
                         focusedLabelColor = Color.Black,
-                        ),
+                    ),
                     shape = RoundedCornerShape(50),
                     singleLine = true
                 )
-
 
                 TextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password", fontSize = textFieldFontSize)  },
+                    label = { Text("Password", fontSize = textFieldFontSize) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding, vertical = 8.dp)
@@ -373,108 +389,99 @@ fun RegisterDriverScreen(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
                         focusedLabelColor = Color.Black,
-                        ),
+                    ),
                     shape = RoundedCornerShape(50),
                     singleLine = true
                 )
 
+                Button(
+                    onClick = {
+                        val trimmedEmail = email.trim()
+                        val trimmedPassword = password.trim()
+                        val trimmedName = name.trim()
+                        val trimmedPhone = phone.trim()
+                        val trimmedRoute = route.trim()
+                        val trimmedPlates = plates.trim()
 
-            Button(
-                onClick = {
-                    val trimmedEmail = email.trim()
-                    val trimmedPassword = password.trim()
-                    val trimmedName = name.trim()
-                    val trimmedPhone = phone.trim()
-                    val trimmedRoute = route.trim()
-                    val trimmedPlates = plates.trim()
-
-                    when {
-                        trimmedName.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Nombre requerido", Toast.LENGTH_SHORT)
-                                .show()
+                        when {
+                            trimmedName.isEmpty() -> {
+                                errorMessage = "Name is required"
+                            }
+                            trimmedName.length < 2 -> {
+                                errorMessage = "Name must be at least 2 characters"
+                            }
+                            trimmedPhone.isEmpty() -> {
+                                errorMessage = "Phone number is required"
+                            }
+                            trimmedPhone.length != 10 -> {
+                                errorMessage = "Phone number must be 10 digits"
+                            }
+                            !isValidEmail(trimmedEmail) -> {
+                                errorMessage = "Invalid email format"
+                            }
+                            trimmedRoute.isEmpty() -> {
+                                errorMessage = "Route selection is required"
+                            }
+                            trimmedPlates.isEmpty() -> {
+                                errorMessage = "License plate is required"
+                            }
+                            trimmedPlates.length < 6 -> {
+                                errorMessage = "License plate must be at least 6 characters"
+                            }
+                            !trimmedPlates.matches(Regex("^[A-Z0-9-]+$")) -> {
+                                errorMessage = "License plate can only contain letters, numbers, and hyphens"
+                            }
+                            trimmedPassword.length < 8 -> {
+                                errorMessage = "Password must be at least 8 characters"
+                            }
+                            !trimmedPassword.matches(Regex("^(?=.*[A-Z])(?=.*[0-9]).+$")) -> {
+                                errorMessage = "Password must contain at least one uppercase letter and one number"
+                            }
+                            else -> {
+                                errorMessage = null
+                                authViewModel.registerDriver(
+                                    trimmedEmail,
+                                    trimmedPassword,
+                                    trimmedName,
+                                    trimmedPhone,
+                                    trimmedRoute,
+                                    trimmedPlates
+                                )
+                            }
                         }
-
-                        trimmedPhone.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-
-                        !isValidEmail(trimmedEmail) -> context?.let {
-                            Toast.makeText(it, "Email inválido", Toast.LENGTH_SHORT).show()
-                        }
-
-                        trimmedRoute.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Ruta requerida", Toast.LENGTH_SHORT).show()
-                        }
-
-                        trimmedPlates.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Placas requeridas", Toast.LENGTH_SHORT).show()
-                        }
-
-                        trimmedPassword.length < 6 -> context?.let {
-                            Toast.makeText(
-                                it,
-                                "La contraseña debe tener al menos 6 caracteres",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
-                        trimmedRoute.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-
-                        trimmedPlates.isEmpty() -> context?.let {
-                            Toast.makeText(it, "Teléfono requerido", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-
-                        else -> {
-                            authViewModel.registerDriver(
-                                trimmedEmail,
-                                trimmedPassword,
-                                trimmedName,
-                                trimmedPhone,
-                                trimmedRoute,
-                                trimmedPlates
-                            )
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp, start = 45.dp, end = 45.dp)
-            ) {
-                Text(
-                    text = "Sign up",
-                    color = Color.White,
-                    style = TextStyle(
-                        fontFamily = AppTypography.button.fontFamily,
-                        fontWeight = AppTypography.button.fontWeight,
-                        fontSize = 24.sp
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, start = 45.dp, end = 45.dp)
+                ) {
+                    Text(
+                        text = "Sign up",
+                        color = Color.White,
+                        style = TextStyle(
+                            fontFamily = AppTypography.button.fontFamily,
+                            fontWeight = AppTypography.button.fontWeight,
+                            fontSize = 24.sp
+                        )
                     )
+                }
+
+                Text(
+                    text = "Not a driver? Click here to continue as a user",
+                    color = Color.DarkGray,
+                    style = TextStyle(
+                        fontFamily = AppTypography.body1.fontFamily,
+                        fontWeight = AppTypography.body1.fontWeight,
+                        fontSize = 16.sp
+                    ),
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .clickable {
+                            navController.navigate("RegisterScreen")
+                        },
+                    textAlign = TextAlign.Center
                 )
             }
-
-
-
-            Text(
-                text = "Not a driver? Click here to continue as a user",
-                color = Color.DarkGray,
-                style = TextStyle(
-                    fontFamily = AppTypography.body1.fontFamily,
-                    fontWeight = AppTypography.body1.fontWeight,
-                    fontSize = 16.sp
-                ),
-                modifier = Modifier
-                    .padding(top = 20.dp)
-                    .clickable {
-                        navController.navigate("RegisterScreen")
-                    },
-                textAlign = TextAlign.Center
-            )
-        }
 
             val registerState by authViewModel.registerState.collectAsState()
 
@@ -487,14 +494,10 @@ fun RegisterDriverScreen(
                         launchSingleTop = true
                     }
                 } else if (!registerState.isNullOrBlank()) {
-                    Toast.makeText(context, registerState, Toast.LENGTH_LONG).show()
+                    errorMessage = registerState
                 }
             }
-
         }
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val screenHeight = configuration.screenHeightDp.dp
 
         val imageWidth = screenWidth * 0.35f
         val imageHeight = screenHeight * 0.2f
@@ -519,4 +522,3 @@ fun RegisterDriverScreen(
 private fun isValidEmail(email: String): Boolean {
     return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
-
