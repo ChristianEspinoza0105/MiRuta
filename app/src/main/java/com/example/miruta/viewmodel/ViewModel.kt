@@ -27,6 +27,16 @@ import com.google.firebase.auth.FirebaseUser
 class AuthViewModel @Inject constructor(
     val authRepository: AuthRepository
 ) : ViewModel() {
+    //Variables de la pestaña MyRoutes
+    private val _favoriteLocations = MutableStateFlow<List<FavoriteLocation>>(emptyList())
+    val favoriteLocations: StateFlow<List<FavoriteLocation>> = _favoriteLocations
+
+    private  val _favoriteRoutes = MutableStateFlow<List<FavoriteRoute>>(emptyList())
+    val favoriteRoute: StateFlow<List<FavoriteRoute>> = _favoriteRoutes
+
+    private val _routines = MutableStateFlow<List<Routine>>(emptyList())
+    val routines: StateFlow<List<Routine>> = _routines
+
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
@@ -321,6 +331,124 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    //Funciones de MyRoute
+    fun addFavoriteLocation(location: FavoriteLocation) {
+        val currentUser = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                authRepository.addFavoriteLocation(currentUser.uid, location) { success, message ->
+                    if (success) {
+                        // Actualizar estado local si es necesario
+                    } else {
+                        Log.e("AuthViewModel", "Error adding location: $message")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error adding location", e)
+            }
+        }
+    }
+
+    fun addFavoriteRoute(route: FavoriteRoute){
+        val currentUser = auth.currentUser ?: return
+        val userId = currentUser.uid
+
+        viewModelScope.launch {
+            try {
+                val routeRef = firestore.collection("users").document(userId)
+                    .collection("favoriteRoutes").document()
+
+                val routeWithId = route.copy(id = routeRef.id)
+                routeRef.set(routeWithId)
+                    .addOnSuccessListener {
+                        fetchFavoriteRoutes(userId)
+                    }
+            }catch (e: Exception){
+                Log.e("AuthViewModel", "Error adding favorite route", e)
+            }
+        }
+    }
+
+    fun addRoutine(routine: Routine){
+        val currentUser = auth.currentUser ?: return
+        val userId = currentUser.uid
+
+        viewModelScope.launch {
+            try{
+                val routineRef = firestore.collection("users").document(userId)
+                    .collection("routines").document()
+
+                val routineWithId = routine.copy(id= routineRef.id, userId = userId)
+                routineRef.set(routineWithId)
+                    .addOnSuccessListener {
+                        fetchRoutines(userId)
+                    }
+            }catch (e: Exception){
+                Log.e("AuthViewModel", "Error adding routine", e)
+            }
+        }
+    }
+
+    private fun fetchFavoriteLocations(userId: String) {
+        firestore.collection("users").document(userId)
+            .collection("favoriteLocations")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("AuthViewModel", "Error fetching favorite locations", error)
+                    return@addSnapshotListener
+                }
+
+                val locations = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(FavoriteLocation::class.java)
+                } ?: emptyList()
+
+                _favoriteLocations.value = locations
+            }
+    }
+
+    private fun fetchFavoriteRoutes(userId: String) {
+        firestore.collection("users").document(userId)
+            .collection("favoriteRoutes")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("AuthViewModel", "Error fetching favorite routes", error)
+                    return@addSnapshotListener
+                }
+
+                val routes = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(FavoriteRoute::class.java)
+                } ?: emptyList()
+
+                _favoriteRoutes.value = routes
+            }
+    }
+
+    private fun fetchRoutines(userId: String) {
+        firestore.collection("users").document(userId)
+            .collection("routines")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("AuthViewModel", "Error fetching routines", error)
+                    return@addSnapshotListener
+                }
+
+                val routines = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Routine::class.java)
+                } ?: emptyList()
+
+                _routines.value = routines
+            }
+    }
+    fun addNewFavoriteLocation(location: FavoriteLocation) {
+        val userId = auth.currentUser?.uid ?: return
+        authRepository.addFavoriteLocation(userId, location) { success, message ->
+            if (!success) {
+                Log.e("AuthViewModel", "Error adding location: $message")
+            }
+        }
+    }
+
+    
     //Revisar tipo de usuario
     fun checkUserRole() {
         val currentUser = auth.currentUser ?: run {
