@@ -470,231 +470,137 @@ fun ExploreScreen(
     }
 
 
-    NarrowBottomSheetScaffold(
-        showSheet = shouldShowBottomSheet,
-        scaffoldState = bottomSheetScaffoldState,
-        sheetPeekHeight = if (showRouteSteps) 100.dp else 100.dp,
-        sheetContent = {
-            if (routePlan != null) {
-                if (showRouteSteps && selectedItineraryForSteps != null) {
-                    RouteStepsView(
-                        itinerary = selectedItineraryForSteps!!,
-                        onBackClick = { showRouteSteps = false }
-                    )
-                } else {
-                    RouteDetailsContent(
-                        routePlan = routePlan!!,
-                        selectedItineraryIndex = selectedItineraryIndex,
-                        onItinerarySelected = { index ->
-                            selectedItineraryIndex = index
-                            updateCameraForSelectedItinerary(routePlan!!.plan?.itineraries?.get(index))
-                        },
-                        onShowSteps = { itinerary ->
-                            selectedItineraryForSteps = itinerary
-                            showRouteSteps = true
-                        }
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "¿Cómo vas, Alex?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                }
-            }
-        }
-    ) { _ ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = !isSharingLocation),
-                uiSettings = MapUiSettings(
-                    myLocationButtonEnabled = false,
-                    zoomControlsEnabled = false
-                ),
-            ) {
-                origenLatLng?.let {
-                    Marker(
-                        state = MarkerState(position = it),
-                        title = "Origen",
-                        icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
-                    )
-                }
-                destinoLatLng?.let {
-                    Marker(
-                        state = MarkerState(position = it),
-                        title = "Destino",
-                        icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
-                    )
-                }
-
-                routePoints[selectedItineraryIndex]?.let { points ->
-                    routePlan?.plan?.itineraries?.get(selectedItineraryIndex)?.legs?.forEach { leg ->
-                        leg.legGeometry?.points?.let { encoded ->
-                            val decodedPoints = decodePolyline(encoded)
-                            Polyline(
-                                points = decodedPoints,
-                                color = if (leg.mode == "WALK") Color.Gray else parseRouteColor(leg.routeColor),
-                                width = 20f,
-                                pattern = if (leg.mode == "WALK") listOf(Dot(), Gap(20f)) else null,
-                                startCap = RoundCap(),
-                                endCap = RoundCap(),
-                                jointType = JointType.ROUND
-                            )
-                        }
-                    }
-                }
-
-                driverMarkers.forEach { (driverId, data) ->
-                    val (position, icon) = data
-                    val driver = activeDrivers.find { it.driverId == driverId }
-
-                    key(driverId) {
-                        Marker(
-                            state = rememberMarkerState(position = position),
-                            title = driver?.driverName ?: "Conductor",
-                            snippet = driver?.let { "Actualizado: ${formatTime(it.lastUpdate)}" },
-                            onClick = {
-                                driver?.let {
-                                    selectedDriver = it
-                                    cameraPositionState.move(
-                                        CameraUpdateFactory.newLatLngZoom(position, 15f)
+    if (!isDriver) {
+        NarrowBottomSheetScaffold(
+            showSheet = shouldShowBottomSheet,
+            scaffoldState = bottomSheetScaffoldState,
+            sheetPeekHeight = if (showRouteSteps) 100.dp else 100.dp,
+            sheetContent = {
+                if (routePlan != null) {
+                    if (showRouteSteps && selectedItineraryForSteps != null) {
+                        RouteStepsView(
+                            itinerary = selectedItineraryForSteps!!,
+                            onBackClick = { showRouteSteps = false }
+                        )
+                    } else {
+                        RouteDetailsContent(
+                            routePlan = routePlan!!,
+                            selectedItineraryIndex = selectedItineraryIndex,
+                            onItinerarySelected = { index ->
+                                selectedItineraryIndex = index
+                                updateCameraForSelectedItinerary(
+                                    routePlan!!.plan?.itineraries?.get(
+                                        index
                                     )
-                                }
-                                true
+                                )
                             },
-                            icon = icon
+                            onShowSteps = { itinerary ->
+                                selectedItineraryForSteps = itinerary
+                                showRouteSteps = true
+                            }
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "¿Cómo vas, Alex?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
                         )
                     }
                 }
-
             }
-
-            if (isLoadingRoute) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
+        ) { _ ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(isMyLocationEnabled = !isSharingLocation),
+                    uiSettings = MapUiSettings(
+                        myLocationButtonEnabled = false,
+                        zoomControlsEnabled = false
+                    ),
                 ) {
-                    LoadingSpinner(isLoading = true)
-                }
-            }
+                    origenLatLng?.let {
+                        Marker(
+                            state = MarkerState(position = it),
+                            title = "Origen",
+                            icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                        )
+                    }
+                    destinoLatLng?.let {
+                        Marker(
+                            state = MarkerState(position = it),
+                            title = "Destino",
+                            icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_marker)
+                        )
+                    }
 
-            val showOverlay = isOrigenFocused || isDestinoFocused
-
-            if (showOverlay) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .align(Alignment.TopCenter)
-            ) {
-                if (shouldShowInputs) {
-                    OutlinedTextField(
-                        value = origen,
-                        onValueChange = { query ->
-                            origen = query
-                            if (query.isBlank()) {
-                                origenLatLng = null
-                                suggestions = emptyList()
-                                updateCameraPosition(origenLatLng, destinoLatLng)
-                            } else {
-                                val request = FindAutocompletePredictionsRequest.builder()
-                                    .setQuery(query)
-                                    .setLocationBias(
-                                        RectangularBounds.newInstance(
-                                            LatLngBounds.builder().include(defaultLocation).build()
-                                        )
-                                    )
-                                    .build()
-
-                                placesClient.findAutocompletePredictions(request)
-                                    .addOnSuccessListener { response ->
-                                        suggestions = response.autocompletePredictions
-                                    }
-                                    .addOnFailureListener {
-                                        suggestions = emptyList()
-                                    }
+                    routePoints[selectedItineraryIndex]?.let { points ->
+                        routePlan?.plan?.itineraries?.get(selectedItineraryIndex)?.legs?.forEach { leg ->
+                            leg.legGeometry?.points?.let { encoded ->
+                                val decodedPoints = decodePolyline(encoded)
+                                Polyline(
+                                    points = decodedPoints,
+                                    color = if (leg.mode == "WALK") Color.Gray else parseRouteColor(
+                                        leg.routeColor
+                                    ),
+                                    width = 20f,
+                                    pattern = if (leg.mode == "WALK") listOf(
+                                        Dot(),
+                                        Gap(20f)
+                                    ) else null,
+                                    startCap = RoundCap(),
+                                    endCap = RoundCap(),
+                                    jointType = JointType.ROUND
+                                )
                             }
-                        },
-                        placeholder = {
-                            Text(
-                                "Search origin",
-                                color = Color.Gray,
-                                fontSize = 16.sp
-                            )
-                        },
+                        }
+                    }
+
+                }
+
+                if (isLoadingRoute) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .onFocusChanged { isOrigenFocused = it.isFocused },
-                        shape = RoundedCornerShape(35.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color(0xFF00933B),
-                            unfocusedIndicatorColor = Color(0xFFE7E7E7)
-                        ),
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = if (isOrigenFocused) R.drawable.ic_back else R.drawable.ic_app),
-                                contentDescription = "Icono origen",
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                                    .clickable {
-                                        if (isOrigenFocused) {
-                                            origen = ""
-                                            origenLatLng = null
-                                            suggestions = emptyList()
-                                            focusManager.clearFocus()
-                                            updateCameraPosition(origenLatLng, destinoLatLng)
-                                        }
-                                    },
-                                tint = Color(0xFF00933B)
-                            )
-                        },
-                        trailingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_search),
-                                contentDescription = "Buscar",
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                            )
-                        },
-                        singleLine = true
+                            .fillMaxSize()
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LoadingSpinner(isLoading = true)
+                    }
+                }
+
+                val showOverlay = isOrigenFocused || isDestinoFocused
+
+                if (showOverlay) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val mostrarDestino = origenLatLng != null
-
-                    if (mostrarDestino) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter)
+                ) {
+                    if (shouldShowInputs) {
                         OutlinedTextField(
-                            value = destino,
+                            value = origen,
                             onValueChange = { query ->
-                                destino = query
+                                origen = query
                                 if (query.isBlank()) {
-                                    destinoLatLng = null
-                                    destinoSuggestions = emptyList()
+                                    origenLatLng = null
+                                    suggestions = emptyList()
                                     updateCameraPosition(origenLatLng, destinoLatLng)
                                 } else {
                                     val request = FindAutocompletePredictionsRequest.builder()
@@ -709,16 +615,16 @@ fun ExploreScreen(
 
                                     placesClient.findAutocompletePredictions(request)
                                         .addOnSuccessListener { response ->
-                                            destinoSuggestions = response.autocompletePredictions
+                                            suggestions = response.autocompletePredictions
                                         }
                                         .addOnFailureListener {
-                                            destinoSuggestions = emptyList()
+                                            suggestions = emptyList()
                                         }
                                 }
                             },
                             placeholder = {
                                 Text(
-                                    "Search destination",
+                                    "Search origin",
                                     color = Color.Gray,
                                     fontSize = 16.sp
                                 )
@@ -726,7 +632,7 @@ fun ExploreScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp)
-                                .onFocusChanged { isDestinoFocused = it.isFocused },
+                                .onFocusChanged { isOrigenFocused = it.isFocused },
                             shape = RoundedCornerShape(35.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.White,
@@ -736,16 +642,16 @@ fun ExploreScreen(
                             ),
                             leadingIcon = {
                                 Icon(
-                                    painter = painterResource(id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_myroute_selected),
-                                    contentDescription = "Icono destino",
+                                    painter = painterResource(id = if (isOrigenFocused) R.drawable.ic_back else R.drawable.ic_app),
+                                    contentDescription = "Icono origen",
                                     modifier = Modifier
                                         .padding(8.dp)
                                         .size(24.dp)
                                         .clickable {
-                                            if (isDestinoFocused) {
-                                                destino = ""
-                                                destinoLatLng = null
-                                                destinoSuggestions = emptyList()
+                                            if (isOrigenFocused) {
+                                                origen = ""
+                                                origenLatLng = null
+                                                suggestions = emptyList()
                                                 focusManager.clearFocus()
                                                 updateCameraPosition(origenLatLng, destinoLatLng)
                                             }
@@ -764,8 +670,94 @@ fun ExploreScreen(
                             },
                             singleLine = true
                         )
-                    }
-                } else if (routePlan != null) {
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val mostrarDestino = origenLatLng != null
+
+                        if (mostrarDestino) {
+                            OutlinedTextField(
+                                value = destino,
+                                onValueChange = { query ->
+                                    destino = query
+                                    if (query.isBlank()) {
+                                        destinoLatLng = null
+                                        destinoSuggestions = emptyList()
+                                        updateCameraPosition(origenLatLng, destinoLatLng)
+                                    } else {
+                                        val request = FindAutocompletePredictionsRequest.builder()
+                                            .setQuery(query)
+                                            .setLocationBias(
+                                                RectangularBounds.newInstance(
+                                                    LatLngBounds.builder().include(defaultLocation)
+                                                        .build()
+                                                )
+                                            )
+                                            .build()
+
+                                        placesClient.findAutocompletePredictions(request)
+                                            .addOnSuccessListener { response ->
+                                                destinoSuggestions =
+                                                    response.autocompletePredictions
+                                            }
+                                            .addOnFailureListener {
+                                                destinoSuggestions = emptyList()
+                                            }
+                                    }
+                                },
+                                placeholder = {
+                                    Text(
+                                        "Search destination",
+                                        color = Color.Gray,
+                                        fontSize = 16.sp
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .onFocusChanged { isDestinoFocused = it.isFocused },
+                                shape = RoundedCornerShape(35.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedIndicatorColor = Color(0xFF00933B),
+                                    unfocusedIndicatorColor = Color(0xFFE7E7E7)
+                                ),
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(id = if (isDestinoFocused) R.drawable.ic_back else R.drawable.ic_myroute_selected),
+                                        contentDescription = "Icono destino",
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .size(24.dp)
+                                            .clickable {
+                                                if (isDestinoFocused) {
+                                                    destino = ""
+                                                    destinoLatLng = null
+                                                    destinoSuggestions = emptyList()
+                                                    focusManager.clearFocus()
+                                                    updateCameraPosition(
+                                                        origenLatLng,
+                                                        destinoLatLng
+                                                    )
+                                                }
+                                            },
+                                        tint = Color(0xFF00933B)
+                                    )
+                                },
+                                trailingIcon = {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_search),
+                                        contentDescription = "Buscar",
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .size(24.dp)
+                                    )
+                                },
+                                singleLine = true
+                            )
+                        }
+                    } else if (routePlan != null) {
                         Column(
                             horizontalAlignment = Alignment.Start,
                             modifier = Modifier.fillMaxWidth()
@@ -799,82 +791,96 @@ fun ExploreScreen(
                                 }
                             }
                         }
-                }
+                    }
 
-                if (isOrigenFocused || isDestinoFocused) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White)
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        if (isOrigenFocused && userLocation != null && destinoLatLng != userLocation) {
-                            SuggestionItem(
-                                fullText = "Use current location",
-                                onClick = {
-                                    origen = "Ubicación actual"
-                                    origenLatLng = userLocation
-                                    suggestions = emptyList()
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    updateCameraPosition(origenLatLng, destinoLatLng)
-                                },
-                                isOrigin = true
-                            )
-                        }
+                    if (isOrigenFocused || isDestinoFocused) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White)
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            if (isOrigenFocused && userLocation != null && destinoLatLng != userLocation) {
+                                SuggestionItem(
+                                    fullText = "Use current location",
+                                    onClick = {
+                                        origen = "Ubicación actual"
+                                        origenLatLng = userLocation
+                                        suggestions = emptyList()
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        updateCameraPosition(origenLatLng, destinoLatLng)
+                                    },
+                                    isOrigin = true
+                                )
+                            }
 
-                        suggestions.forEach { prediction ->
-                            SuggestionItem(
-                                fullText = prediction.getFullText(null).toString(),
-                                onClick = {
-                                    origen = prediction.getFullText(null).toString()
-                                    suggestions = emptyList()
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
+                            suggestions.forEach { prediction ->
+                                SuggestionItem(
+                                    fullText = prediction.getFullText(null).toString(),
+                                    onClick = {
+                                        origen = prediction.getFullText(null).toString()
+                                        suggestions = emptyList()
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
 
-                                    coroutineScope.launch {
-                                        fetchPlaceLatLng(context, prediction.placeId)?.let {
-                                            origenLatLng = it
-                                            updateCameraPosition(origenLatLng, destinoLatLng)
+                                        coroutineScope.launch {
+                                            fetchPlaceLatLng(context, prediction.placeId)?.let {
+                                                origenLatLng = it
+                                                updateCameraPosition(origenLatLng, destinoLatLng)
+                                            }
                                         }
-                                    }
-                                },
-                                isOrigin = true
-                            )
-                        }
+                                    },
+                                    isOrigin = true
+                                )
+                            }
 
-                        if (isDestinoFocused && userLocation != null && origenLatLng != userLocation) {
-                            SuggestionItem(
-                                fullText = "Use current location",
-                                onClick = {
-                                    destino = "Ubicación actual"
-                                    destinoLatLng = userLocation
-                                    destinoSuggestions = emptyList()
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    updateCameraPosition(origenLatLng, destinoLatLng)
-                                },
-                                isOrigin = false
-                            )
-                        }
+                            if (isDestinoFocused && userLocation != null && origenLatLng != userLocation) {
+                                SuggestionItem(
+                                    fullText = "Use current location",
+                                    onClick = {
+                                        destino = "Ubicación actual"
+                                        destinoLatLng = userLocation
+                                        destinoSuggestions = emptyList()
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        updateCameraPosition(origenLatLng, destinoLatLng)
+                                    },
+                                    isOrigin = false
+                                )
+                            }
 
-                        destinoSuggestions.forEach { prediction ->
-                            SuggestionItem(
-                                fullText = prediction.getFullText(null).toString(),
-                                onClick = {
-                                    destino = prediction.getFullText(null).toString()
-                                    destinoSuggestions = emptyList()
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
+                            destinoSuggestions.forEach { prediction ->
+                                SuggestionItem(
+                                    fullText = prediction.getFullText(null).toString(),
+                                    onClick = {
+                                        destino = prediction.getFullText(null).toString()
+                                        destinoSuggestions = emptyList()
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
 
-                                    coroutineScope.launch {
-                                        fetchPlaceLatLng(context, prediction.placeId)?.let {
-                                            destinoLatLng = it
-                                            updateCameraPosition(origenLatLng, destinoLatLng)
+                                        coroutineScope.launch {
+                                            fetchPlaceLatLng(context, prediction.placeId)?.let {
+                                                destinoLatLng = it
+                                                updateCameraPosition(origenLatLng, destinoLatLng)
+                                            }
                                         }
-                                    }
-                                },
-                                isOrigin = false
+                                    },
+                                    isOrigin = false
+                                )
+                            }
+                        }
+                    }
+
+                    errorMessage?.let {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = it,
+                                color = Color.Red
                             )
                         }
                     }
@@ -883,12 +889,51 @@ fun ExploreScreen(
                 errorMessage?.let {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize(),
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = it,
                             color = Color.Red
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(isMyLocationEnabled = !isSharingLocation),
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = false,
+                    zoomControlsEnabled = false
+                ),
+            ) {
+
+                driverMarkers.forEach { (driverId, data) ->
+                    val (position, icon) = data
+                    val driver = activeDrivers.find { it.driverId == driverId }
+
+                    key(driverId) {
+                        Marker(
+                            state = rememberMarkerState(position = position),
+                            title = driver?.driverName ?: "Conductor",
+                            snippet = driver?.let { "Actualizado: ${formatTime(it.lastUpdate)}" },
+                            onClick = {
+                                driver?.let {
+                                    selectedDriver = it
+                                    cameraPositionState.move(
+                                        CameraUpdateFactory.newLatLngZoom(position, 15f)
+                                    )
+                                }
+                                true
+                            },
+                            icon = icon
                         )
                     }
                 }
@@ -907,7 +952,7 @@ fun ExploreScreen(
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(horizontal = 20.dp, vertical = 120.dp)
+                        .padding(horizontal = 20.dp, vertical = 100.dp)
                 )
             }
 
@@ -923,43 +968,8 @@ fun ExploreScreen(
                         .padding(16.dp)
                 )
             }
-
-            errorMessage?.let {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = it,
-                        color = Color.Red
-                    )
-                }
-            }
         }
     }
-}
-
-fun vectorResourceToBitmapDescriptor(context: Context, vectorResId: Int): BitmapDescriptor {
-    val vectorDrawable = ContextCompat.getDrawable(context, vectorResId)!!
-    val bitmap = Bitmap.createBitmap(
-        vectorDrawable.intrinsicWidth,
-        vectorDrawable.intrinsicHeight,
-        Bitmap.Config.ARGB_8888
-    )
-    val canvas = Canvas(bitmap)
-    vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
-    vectorDrawable.draw(canvas)
-    return BitmapDescriptorFactory.fromBitmap(bitmap)
-}
-
-fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
-    val matrix = Matrix()
-    matrix.postRotate(angle)
-    return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
 }
 
 private fun formatTime(timestamp: Long): String {
@@ -1652,7 +1662,7 @@ private fun SharingLocationFAB(
                     }
                 }
             },
-            containerColor = if (isSharing) Color.Red else Color(0xFF00933B),
+            containerColor = if (isSharing) Color(0xFFF3CF21) else Color(0xFF00933B),
             modifier = Modifier
                 .matchParentSize()
                 .graphicsLayer {
