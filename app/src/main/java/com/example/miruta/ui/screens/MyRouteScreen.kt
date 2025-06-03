@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -62,6 +63,7 @@ import com.example.miruta.data.models.Routine
 import com.example.miruta.data.models.RoutineStop
 import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.components.FavoriteRouteCard
+import com.example.miruta.ui.components.SuccessMessageCard
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.util.parseRouteColor
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -181,7 +183,6 @@ fun MyRouteScreen(navController: NavHostController) {
         }
     }
 
-
     // BottomSheet para Route Search
     if (showRouteSearchSheet) {
         ModalBottomSheet(
@@ -199,7 +200,6 @@ fun MyRouteScreen(navController: NavHostController) {
             )
         }
     }
-
 
     //BottomSheet Location Functions
     if (showLocationSheet) {
@@ -990,7 +990,10 @@ fun FavoriteBottomSheetContent(
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Route", fontSize = 16.sp)
+                    Text(
+                        text = "Favorites",
+                        style = TextStyle(fontSize = 16.sp)
+                    )
 
                 }
             }
@@ -1049,6 +1052,10 @@ fun RouteSearchBottomSheetContent(
     var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedTransport by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteRoutes by viewModel.favoriteRoutes.collectAsState()
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val list = withContext(Dispatchers.IO) {
@@ -1056,12 +1063,17 @@ fun RouteSearchBottomSheetContent(
         }
         routes = list
     }
-    val filtered = remember(routes, searchQuery, selectedTransport) {
+
+    val filtered = remember(routes, searchQuery, selectedTransport, favoriteRoutes) {
         routes.filter { route ->
             val matchesSearch = route.routeShortName.contains(searchQuery, ignoreCase = true) ||
                     route.routeLongName.contains(searchQuery, ignoreCase = true)
 
-            matchesSearch
+            val isNotFavorite = favoriteRoutes.none { favorite ->
+                favorite.routeId == route.routeId
+            }
+
+            matchesSearch && isNotFavorite
         }
     }
 
@@ -1069,6 +1081,7 @@ fun RouteSearchBottomSheetContent(
         selectedTransport = null
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.padding(16.dp)) {
         // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1089,7 +1102,10 @@ fun RouteSearchBottomSheetContent(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Route", fontSize = 18.sp)
+            Text(
+                text = "Favorites",
+                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            )
             Spacer(modifier = Modifier.weight(1f))
             Card(
                 modifier = Modifier.align(Alignment.Top),
@@ -1135,38 +1151,37 @@ fun RouteSearchBottomSheetContent(
 
         LazyColumn {
             items(filtered) { route ->
-                val icon = painterResource(id = R.drawable.ic_busline)
-
                 FavoriteRouteCard(
                     routeName = route.routeShortName,
                     description = route.routeLongName,
                     color = parseRouteColor(route.routeColor),
-                    icon = icon,
+                    icon = painterResource(id = R.drawable.ic_busline),
                     onFavoriteClick = {
-                        val currentUser = viewModel.auth.currentUser
-                        if (currentUser != null) {
-                            val favoriteRoute = FavoriteRoute(
-                                routeId = route.id,
+                        viewModel.addFavoriteRoute(
+                            FavoriteRoute(
+                                routeId = route.routeId,
                                 routeName = route.routeShortName,
                                 routeDescription = route.routeLongName,
                                 isFavorite = true
                             )
-                            viewModel.addFavoriteRoute(favoriteRoute)
-
-
-                            searchQuery = ""
-
-
-                            coroutineScope.launch {
-                                delay(1000)
-                                onDismiss()
-                            }
-                        } else {
-                            Toast.makeText(context, "Please login to save your favorites routes", Toast.LENGTH_SHORT).show()
-                        }
+                        )
+                    },
+                    showSuccessMessage = { message ->
+                        successMessage = message
+                        showSuccessMessage = true
                     }
                 )
             }
+        }
+    }
+
+        if (showSuccessMessage) {
+            SuccessMessageCard(
+                message = successMessage,
+                details = "You can see it in your favorites section.",
+                onDismiss = { showSuccessMessage = false },
+                durationMillis = 3000
+            )
         }
     }
 }
@@ -1177,7 +1192,7 @@ fun LocationBottomSheetContent(
     onChooseMapButtonClick: () -> Unit,
     onCurrentLocationButtonClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -1197,7 +1212,10 @@ fun LocationBottomSheetContent(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Location", fontSize = 18.sp)
+            Text(
+                text = "Favorites",
+                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            )
             Spacer(modifier = Modifier.weight(1f))
             Card(
                 modifier = Modifier.align(Alignment.Top),
@@ -1212,26 +1230,7 @@ fun LocationBottomSheetContent(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        TextButton(
-            onClick = { onCurrentLocationButtonClick() },
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_routelogin),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Your current location", fontSize = 18.sp, color = Color.Black)
-                }
-            }
-        }
 
-        Divider(modifier = Modifier.padding(vertical = 4.dp))
         TextButton(
             onClick = { onChooseMapButtonClick() },
             modifier = Modifier
@@ -1260,6 +1259,12 @@ fun ChooseMapBottomSheetContent(
     onCloseALlBottomSheet: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val locationPermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
     val coroutineScope = rememberCoroutineScope()
     var isFavorite by remember { mutableStateOf(false) }
     var favoriteName by remember { mutableStateOf("") }
@@ -1267,22 +1272,22 @@ fun ChooseMapBottomSheetContent(
     val defaultLocation = LatLng(20.659699, -103.349609)
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
-    var locationName by remember { mutableStateOf("Selecciona una ubicación en el mapa") }
     var isLoading by remember { mutableStateOf(true) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    var successDetails by remember { mutableStateOf("") }
+    var locationName by remember { mutableStateOf("Selecciona una ubicación en el mapa") }
+    var successMessage by remember { mutableStateOf("Ubicación guardada como favorita") }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
     }
 
-    // Función para obtener el nombre de la ubicación usando Geocoder
     suspend fun getLocationName(latLng: LatLng): String {
         return try {
             val geocoder = Geocoder(context, Locale.getDefault())
             val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-
             if (!addresses.isNullOrEmpty()) {
                 val address = addresses[0]
-                // Construir una dirección legible
                 val sb = StringBuilder()
                 for (i in 0..address.maxAddressLineIndex) {
                     sb.append(address.getAddressLine(i))
@@ -1290,28 +1295,20 @@ fun ChooseMapBottomSheetContent(
                 }
                 sb.toString()
             } else {
-                "${latLng.latitude}, ${latLng.longitude}" // Si no hay dirección, mostrar coordenadas
+                "${latLng.latitude}, ${latLng.longitude}"
             }
         } catch (e: Exception) {
             Log.e("Geocoder", "Error getting location name", e)
-            "${latLng.latitude}, ${latLng.longitude}" // En caso de error, mostrar coordenadas
+            "${latLng.latitude}, ${latLng.longitude}"
         }
     }
 
-    // Reverse geocode cuando se coloca el marcador
     LaunchedEffect(selectedLocation) {
         selectedLocation?.let { latLng ->
-            locationName = "Obteniendo dirección..." // Mensaje mientras carga
+            locationName = "Obteniendo dirección..."
             locationName = getLocationName(latLng)
         }
     }
-
-    val locationPermissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    )
 
     LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
         if (locationPermissionsState.allPermissionsGranted) {
@@ -1331,209 +1328,191 @@ fun ChooseMapBottomSheetContent(
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp)
-    ) {
-        // Header with title and close button
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        if (showSuccessMessage) {
             Box(
                 modifier = Modifier
-                    .border(
-                        width = 4.dp,
-                        color = Color(0xFFF3CF21),
-                        shape = RoundedCornerShape(15.dp)
-                    )
-                    .size(44.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .zIndex(1f),
+                contentAlignment = Alignment.TopCenter
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_location_myroute),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp)
+                SuccessMessageCard(
+                    message = successMessage,
+                    details = successDetails,
+                    onDismiss = { showSuccessMessage = false }
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Location", fontSize = 18.sp)
-            Spacer(modifier = Modifier.weight(1f))
-            Card(
-                modifier = Modifier.align(Alignment.Top),
-                onClick = onDismiss,
-            ) {
-                Box() {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_exit),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+
+            LaunchedEffect(Unit) {
+                delay(3000)
+                showSuccessMessage = false
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Map view
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(16.dp))
+                .fillMaxHeight()
+                .padding(16.dp)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = locationPermissionsState.allPermissionsGranted
-                    ),
-                    uiSettings = MapUiSettings(
-                        myLocationButtonEnabled = false,
-                        zoomControlsEnabled = false
-                    ),
-                    onMapClick = { latLng ->
-                        selectedLocation = latLng
-                    }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .border(
+                            width = 4.dp,
+                            color = Color(0xFFF3CF21),
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        .size(44.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-
-                    if (locationPermissionsState.allPermissionsGranted) {
-                        userLocation?.let { latLng ->
-
-                        }
-                    }
-
-                    selectedLocation?.let { latLng ->
-                        Marker(
-                            state = MarkerState(position = latLng),
-                            title = "Selected Location",
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED),
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_location_myroute),
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Favorites",
+                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Card(
+                    modifier = Modifier.align(Alignment.Top),
+                    onClick = onDismiss,
+                ) {
+                    Box {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_exit),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
-        ) {
-
-            TextField(
-                value = favoriteName,
-                onValueChange = { favoriteName = it },
-                label = { Text("Add favorite name", fontSize = 16.sp) },
+            Box(
                 modifier = Modifier
-                    .shadow(
-                        elevation = 10.600000381469727.dp,
-                        spotColor = Color(0x40000000),
-                        ambientColor = Color(0x40000000)
-                    )
-                    .background(Color.White, RoundedCornerShape(40))
-                    .fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    cursorColor = Color.Black,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    focusedLabelColor = Color.Black,
-                ),
-                shape = RoundedCornerShape(50),
-                singleLine = true
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-
-            TextField(
-                value = locationName,
-                onValueChange = { locationName = it },
-                modifier = Modifier
+                    .fillMaxWidth()
                     .weight(1f)
-                    .shadow(
-                        elevation = 10.600000381469727.dp,
-                        spotColor = Color(0x40000000),
-                        ambientColor = Color(0x40000000)
-                    )
-                    .background(Color.White, RoundedCornerShape(40)),
-                colors = TextFieldDefaults.colors(
-                    cursorColor = Color.Black,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    focusedLabelColor = Color.Black
-                ),
-                shape = RoundedCornerShape(50),
-                singleLine = true,
-                readOnly = true,
-                placeholder = {
-                    if (locationName.isEmpty()) {
-                        Text("Selecciona una ubicación en el mapa", fontSize = 18.sp)
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-
-            IconButton(
-                onClick = {
-                    selectedLocation?.let { latLng ->
-                        if (favoriteName.isNotEmpty() && locationName.isNotEmpty()) {
-                            isFavorite = true // Cambia a amarillo
-
-                            val favoriteLocation = FavoriteLocation(
-                                name = favoriteName,
-                                address = locationName,
-                                latitude = latLng.latitude,
-                                longitude = latLng.longitude,
-                                isFavorite = true
-                            )
-                            viewModel.addFavoriteLocation(favoriteLocation)
-
-
-                            coroutineScope.launch {
-                                delay(500)
-                                favoriteName = ""
-                                locationName = "Selecciona una ubicación en el mapa"
-                                selectedLocation = null
-                                isFavorite = false
-                                onCloseALlBottomSheet()
-                            }
-                        } else {
-                            Toast.makeText(context, "Please fill the name and choose a location", Toast.LENGTH_SHORT).show()
-                        }
-                    } ?: run {
-                        Toast.makeText(context, "Please choose a location", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                    .clip(RoundedCornerShape(16.dp))
             ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
-                    contentDescription = "Favorito",
-                    tint = if (isFavorite) Color(0xFFF3CF21) else Color.Gray,
-                    modifier = Modifier.size(32.dp)
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else {
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        properties = MapProperties(
+                            isMyLocationEnabled = locationPermissionsState.allPermissionsGranted
+                        ),
+                        uiSettings = MapUiSettings(
+                            myLocationButtonEnabled = false,
+                            zoomControlsEnabled = false
+                        ),
+                        onMapClick = { latLng -> selectedLocation = latLng }
+                    ) {
+                        selectedLocation?.let { latLng ->
+                            Marker(
+                                state = MarkerState(position = latLng),
+                                title = "Selected Location",
+                                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextField(
+                    value = favoriteName,
+                    onValueChange = { favoriteName = it },
+                    label = {
+                        Text(
+                            "Add favorite name",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Light
+                        )
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .shadow(
+                            elevation = 10.6.dp,
+                            spotColor = Color(0x40000000),
+                            ambientColor = Color(0x40000000)
+                        )
+                        .background(Color.White, RoundedCornerShape(40)),
+                    colors = TextFieldDefaults.colors(
+                        cursorColor = Color.Black,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = Color.Black,
+                    ),
+                    shape = RoundedCornerShape(50),
+                    singleLine = true
                 )
+
+                IconButton(
+                    onClick = {
+                        selectedLocation?.let { latLng ->
+                            if (favoriteName.isNotEmpty() && locationName.isNotEmpty()) {
+                                isFavorite = true
+
+                                val favoriteLocation = FavoriteLocation(
+                                    name = favoriteName,
+                                    address = locationName,
+                                    latitude = latLng.latitude,
+                                    longitude = latLng.longitude,
+                                    isFavorite = true
+                                )
+                                viewModel.addFavoriteLocation(favoriteLocation)
+
+                                successDetails = "$favoriteName\n$locationName"
+                                showSuccessMessage = true
+
+                                coroutineScope.launch {
+                                    delay(500)
+                                    favoriteName = ""
+                                    locationName = "Selecciona una ubicación en el mapa"
+                                    selectedLocation = null
+                                    isFavorite = false
+                                    onCloseALlBottomSheet()
+                                }
+                            } else {
+                                Toast.makeText(context, "Please fill the name and choose a location", Toast.LENGTH_SHORT).show()
+                            }
+                        } ?: run {
+                            Toast.makeText(context, "Please choose a location", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                        contentDescription = "Favorito",
+                        tint = if (isFavorite) Color(0xFFF3CF21) else Color.Gray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
     }
 }
+
 
 private fun getDeviceLocation(context: Context) =
     LocationServices.getFusedLocationProviderClient(context)

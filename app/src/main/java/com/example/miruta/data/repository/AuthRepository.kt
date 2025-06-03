@@ -1,5 +1,8 @@
 package com.example.miruta.data.repository
 
+import com.example.miruta.data.models.FavoriteLocation
+import com.example.miruta.data.models.FavoriteRoute
+import com.example.miruta.data.models.Routine
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException

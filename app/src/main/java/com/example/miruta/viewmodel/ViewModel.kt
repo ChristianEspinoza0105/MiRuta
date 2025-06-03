@@ -21,7 +21,11 @@ import javax.inject.Inject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.miruta.data.models.FavoriteLocation
+import com.example.miruta.data.models.FavoriteRoute
+import com.example.miruta.data.models.Routine
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.flow.asStateFlow
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -31,14 +35,13 @@ class AuthViewModel @Inject constructor(
     private val _favoriteLocations = MutableStateFlow<List<FavoriteLocation>>(emptyList())
     val favoriteLocations: StateFlow<List<FavoriteLocation>> = _favoriteLocations
 
-    private  val _favoriteRoutes = MutableStateFlow<List<FavoriteRoute>>(emptyList())
-    val favoriteRoute: StateFlow<List<FavoriteRoute>> = _favoriteRoutes
+    private val _favoriteRoutes = MutableStateFlow<List<FavoriteRoute>>(emptyList())
+    val favoriteRoutes: StateFlow<List<FavoriteRoute>> = _favoriteRoutes.asStateFlow()
 
     private val _routines = MutableStateFlow<List<Routine>>(emptyList())
     val routines: StateFlow<List<Routine>> = _routines
 
-
-    private val auth = FirebaseAuth.getInstance()
+    val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
     private val _loginState = MutableStateFlow<String?>(null)
@@ -406,23 +409,21 @@ class AuthViewModel @Inject constructor(
             }
     }
 
-    private fun fetchFavoriteRoutes(userId: String) {
-        firestore.collection("users").document(userId)
-            .collection("favoriteRoutes")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Log.e("AuthViewModel", "Error fetching favorite routes", error)
-                    return@addSnapshotListener
-                }
-
-                val routes = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(FavoriteRoute::class.java)
-                } ?: emptyList()
-
-                _favoriteRoutes.value = routes
+    fun fetchFavoriteRoutes(userId: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("users").document(userId)
+                    .collection("favoriteRoutes")
+                    .get()
+                    .addOnSuccessListener { result ->
+                        val routes = result.toObjects(FavoriteRoute::class.java)
+                        _favoriteRoutes.value = routes
+                    }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error fetching favorite routes", e)
             }
+        }
     }
-
     private fun fetchRoutines(userId: String) {
         firestore.collection("users").document(userId)
             .collection("routines")
