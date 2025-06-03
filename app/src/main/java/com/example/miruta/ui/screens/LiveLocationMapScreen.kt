@@ -1,5 +1,7 @@
 package com.example.miruta.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -7,12 +9,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.example.miruta.R
 import com.example.miruta.ui.components.LoadingSpinner
 import com.example.miruta.ui.theme.AppTypography
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,6 +30,7 @@ fun LiveLocationMapScreen(
     routeId: String,
     navController: NavHostController
 ) {
+    val context = LocalContext.current
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     var currentLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
     var isLoading by remember { mutableStateOf(true) }
@@ -38,6 +45,33 @@ fun LiveLocationMapScreen(
             .document(liveLocationDocId)
     }
 
+    val cameraPositionState = rememberCameraPositionState()
+
+    val originalBitmap = remember {
+        val drawable = ContextCompat.getDrawable(context, R.drawable.ic_bus_live)!!
+        val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 100
+        val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 100
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, width, height)
+        drawable.draw(canvas)
+        bitmap
+    }
+
+    fun scaleBitmapForZoom(bitmap: Bitmap, zoom: Float): Bitmap {
+        val minSize = 80f
+        val maxSize = 170f
+        val clampedZoom = zoom.coerceIn(10f, 20f)
+        val scaleFactor = (clampedZoom - 5f) / (20f - 5f)
+        val size = (minSize + scaleFactor * (maxSize - minSize)).toInt()
+        return Bitmap.createScaledBitmap(bitmap, size, size, true)
+    }
+
+    val scaledIcon = remember(cameraPositionState.position.zoom, originalBitmap) {
+        val zoom = cameraPositionState.position.zoom
+        BitmapDescriptorFactory.fromBitmap(scaleBitmapForZoom(originalBitmap, zoom))
+    }
+
     LaunchedEffect(liveLocationDocId) {
         docRef.get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
@@ -48,6 +82,7 @@ fun LiveLocationMapScreen(
                 currentLocation = LatLng(lat, lng)
                 isUserOwner = senderId == currentUserId
                 isLoading = false
+                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f))
             } else {
                 documentExists = false
             }
@@ -77,13 +112,12 @@ fun LiveLocationMapScreen(
         } else {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
-                cameraPositionState = rememberCameraPositionState().apply {
-                    move(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f))
-                }
+                cameraPositionState = cameraPositionState
             ) {
                 Marker(
-                    state = MarkerState(position = currentLocation),
-                    title = "Ubicación en vivo"
+                    state = rememberMarkerState(position = currentLocation),
+                    title = "Ubicación en vivo",
+                    icon = scaledIcon
                 )
             }
 
