@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationSpec
@@ -119,6 +121,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miruta.data.models.DriverLocation
 import com.example.miruta.data.repository.LiveLocationSharingDrivers
@@ -134,7 +137,6 @@ import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -161,6 +163,11 @@ fun ExploreScreen(
         }
     }
 
+    val allowedBounds = LatLngBounds(
+        LatLng(19.8, -104.2),
+        LatLng(21.2, -102.8)
+    )
+
     val userRole by authViewModel.userRole.collectAsState()
     val isDriver = userRole == "driver"
     var isSharingLocation by remember { mutableStateOf(false) }
@@ -177,6 +184,21 @@ fun ExploreScreen(
 
     val markersState = remember { mutableStateMapOf<String, MarkerState>() }
 
+
+    LaunchedEffect(cameraPositionState.position.target) {
+        if (!allowedBounds.contains(cameraPositionState.position.target)) {
+            cameraPositionState.move(
+                CameraUpdateFactory.newLatLngBounds(allowedBounds, 50)
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        cameraPositionState.move(
+            CameraUpdateFactory.newLatLngBounds(allowedBounds, 50)
+        )
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             locationViewModel.stopSharingLocation()
@@ -187,24 +209,56 @@ fun ExploreScreen(
         }
     }
 
-    val driverMarkers = remember { mutableStateMapOf<String, Pair<LatLng, BitmapDescriptor>>() }
+    val originalBitmap = remember {
+        val vectorDrawable = ContextCompat.getDrawable(context, R.drawable.ic_bus_live)!!
+        val width = vectorDrawable.intrinsicWidth.takeIf { it > 0 } ?: 100
+        val height = vectorDrawable.intrinsicHeight.takeIf { it > 0 } ?: 100
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        vectorDrawable.setBounds(0, 0, width, height)
+        vectorDrawable.draw(canvas)
+        bitmap
+    }
 
+    val driverMarkers = remember { mutableStateMapOf<String, Pair<LatLng, BitmapDescriptor>>() }
     val hasStarted = remember { mutableStateOf(false) }
 
-    LaunchedEffect(activeDrivers) {
+    fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(angle) }
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
+    fun scaleBitmapForZoom(bitmap: Bitmap, zoom: Float): Bitmap {
+        val minSize = 80f
+        val maxSize = 170f
+        val clampedZoom = zoom.coerceIn(10f, 20f)
+        val scaleFactor = (clampedZoom - 5f) / (20f - 5f)
+
+        val size = (minSize + scaleFactor * (maxSize - minSize)).toInt()
+
+        return Bitmap.createScaledBitmap(bitmap, size, size, true)
+    }
+
+    LaunchedEffect(activeDrivers, cameraPositionState.position.zoom) {
         if (hasStarted.value) {
             val activeDriverIds = activeDrivers.map { it.driverId }
             driverMarkers.keys.removeAll { !activeDriverIds.contains(it) }
 
+            val zoom = cameraPositionState.position.zoom
             activeDrivers.forEach { driver ->
-                val icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_app)
-                driverMarkers[driver.driverId] = LatLng(driver.latitude, driver.longitude) to icon
+                val latLng = LatLng(driver.latitude, driver.longitude)
+                val bearing = driver.bearing ?: 0f
+
+                val rotatedBitmap = rotateBitmap(originalBitmap, bearing)
+                val scaledBitmap = scaleBitmapForZoom(rotatedBitmap, zoom)
+                val icon = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+
+                driverMarkers[driver.driverId] = latLng to icon
             }
         } else {
             hasStarted.value = true
         }
     }
-
 
     LaunchedEffect(userLocation) {
         userLocation?.let {
@@ -214,32 +268,6 @@ fun ExploreScreen(
 
     LaunchedEffect(Unit) {
         authViewModel.checkUserRole()
-    }
-
-    LaunchedEffect(Unit) {
-        authViewModel.checkUserRole()
-        try {
-            currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    val exception = task.exception
-                    if (exception is FirebaseAuthInvalidUserException) {
-                        FirebaseAuth.getInstance().signOut()
-
-                        Toast.makeText(
-                            context,
-                            "Tu sesión ha expirado. Inicia sesión nuevamente.",
-                            Toast.LENGTH_LONG
-                        ).show()
-
-                        navController?.navigate("login_screen") {
-                            popUpTo(0)
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("ExploreScreen", "Error verificando usuario: ${e.message}")
-        }
     }
 
     var isLoading by remember { mutableStateOf(true) }
@@ -488,9 +516,8 @@ fun ExploreScreen(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = true),
+                properties = MapProperties(isMyLocationEnabled = !isSharingLocation),
                 uiSettings = MapUiSettings(myLocationButtonEnabled = false),
-
             ) {
                 origenLatLng?.let {
                     Marker(
@@ -911,6 +938,25 @@ fun ExploreScreen(
             }
         }
     }
+}
+
+fun vectorResourceToBitmapDescriptor(context: Context, vectorResId: Int): BitmapDescriptor {
+    val vectorDrawable = ContextCompat.getDrawable(context, vectorResId)!!
+    val bitmap = Bitmap.createBitmap(
+        vectorDrawable.intrinsicWidth,
+        vectorDrawable.intrinsicHeight,
+        Bitmap.Config.ARGB_8888
+    )
+    val canvas = Canvas(bitmap)
+    vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
+    vectorDrawable.draw(canvas)
+    return BitmapDescriptorFactory.fromBitmap(bitmap)
+}
+
+fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+    val matrix = Matrix()
+    matrix.postRotate(angle)
+    return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
 }
 
 private fun formatTime(timestamp: Long): String {
