@@ -109,12 +109,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -126,12 +128,14 @@ import com.example.miruta.ui.theme.PoppinsFontFamily
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.utils.getLocationFlow
 import com.example.miruta.viewmodel.LocationViewModel
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.Dot
 import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 
@@ -143,12 +147,24 @@ fun ExploreScreen(
     locationViewModel: LocationViewModel = hiltViewModel(),
     liveLocationSharing: LiveLocationSharingDrivers = hiltViewModel()
 ) {
-    // Estados
+
+    val locationPermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    LaunchedEffect(Unit) {
+        if (!locationPermissionsState.allPermissionsGranted) {
+            locationPermissionsState.launchMultiplePermissionRequest()
+        }
+    }
+
     val userRole by authViewModel.userRole.collectAsState()
     val isDriver = userRole == "driver"
     var isSharingLocation by remember { mutableStateOf(false) }
 
-    // Ubicación y conductores
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     val activeDrivers by locationViewModel.activeDrivers.collectAsState()
     var selectedDriver by remember { mutableStateOf<DriverLocation?>(null) }
@@ -159,22 +175,36 @@ fun ExploreScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val cameraPositionState = rememberCameraPositionState()
 
-    val locationPermissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    )
-
     val markersState = remember { mutableStateMapOf<String, MarkerState>() }
 
-    LaunchedEffect(activeDrivers) {
-        activeDrivers.forEach { driver ->
-            markersState.getOrPut(driver.driverId) {
-                MarkerState(position = LatLng(driver.latitude, driver.longitude))
-            }.position = LatLng(driver.latitude, driver.longitude)
+    DisposableEffect(Unit) {
+        onDispose {
+            locationViewModel.stopSharingLocation()
+            if (isSharingLocation) {
+                liveLocationSharing.stopSharing()
+                markersState.clear()
+            }
         }
     }
+
+    val driverMarkers = remember { mutableStateMapOf<String, Pair<LatLng, BitmapDescriptor>>() }
+
+    val hasStarted = remember { mutableStateOf(false) }
+
+    LaunchedEffect(activeDrivers) {
+        if (hasStarted.value) {
+            val activeDriverIds = activeDrivers.map { it.driverId }
+            driverMarkers.keys.removeAll { !activeDriverIds.contains(it) }
+
+            activeDrivers.forEach { driver ->
+                val icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_app)
+                driverMarkers[driver.driverId] = LatLng(driver.latitude, driver.longitude) to icon
+            }
+        } else {
+            hasStarted.value = true
+        }
+    }
+
 
     LaunchedEffect(userLocation) {
         userLocation?.let {
@@ -186,18 +216,8 @@ fun ExploreScreen(
         authViewModel.checkUserRole()
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            locationViewModel.stopSharingLocation()
-            if (isSharingLocation) {
-                liveLocationSharing.stopSharing()
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         authViewModel.checkUserRole()
-
         try {
             currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
                 if (!task.isSuccessful) {
@@ -469,7 +489,8 @@ fun ExploreScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 properties = MapProperties(isMyLocationEnabled = true),
-                uiSettings = MapUiSettings(myLocationButtonEnabled = false)
+                uiSettings = MapUiSettings(myLocationButtonEnabled = false),
+
             ) {
                 origenLatLng?.let {
                     Marker(
@@ -503,27 +524,25 @@ fun ExploreScreen(
                     }
                 }
 
-                markersState.values.forEach { markerState ->
-                    val driver = activeDrivers.find { driver ->
-                        LatLng(driver.latitude, driver.longitude) == markerState.position
-                    }
+                driverMarkers.forEach { (driverId, data) ->
+                    val (position, icon) = data
+                    val driver = activeDrivers.find { it.driverId == driverId }
 
-                    driver?.let { driverLocation ->
+                    key(driverId) {
                         Marker(
-                            state = markerState,
-                            title = driverLocation.driverName,
-                            snippet = "Actualizado: ${formatTime(driverLocation.lastUpdate)}",
+                            state = rememberMarkerState(position = position),
+                            title = driver?.driverName ?: "Conductor",
+                            snippet = driver?.let { "Actualizado: ${formatTime(it.lastUpdate)}" },
                             onClick = {
-                                selectedDriver = driverLocation
-                                cameraPositionState.move(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        markerState.position,
-                                        15f
+                                driver?.let {
+                                    selectedDriver = it
+                                    cameraPositionState.move(
+                                        CameraUpdateFactory.newLatLngZoom(position, 15f)
                                     )
-                                )
+                                }
                                 true
                             },
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                            icon = icon
                         )
                     }
                 }
@@ -853,6 +872,7 @@ fun ExploreScreen(
                         if (!sharing) {
                             markersState.clear()
                             selectedDriver = null
+                            locationViewModel.stopSharingLocation()
                         }
                     },
                     modifier = Modifier
@@ -1524,61 +1544,78 @@ private fun SharingLocationFAB(
     val locationViewModel: LocationViewModel = hiltViewModel()
     val currentUser = FirebaseAuth.getInstance().currentUser
 
-    FloatingActionButton(
-        onClick = {
-            scope.launch {
-                if (!isSharing) {
-                    currentUser?.let { user ->
-                        try {
-                            locationViewModel.initializeSharing(user.uid, user.displayName ?: "Conductor")
+    var isLoading by remember { mutableStateOf(false) }
 
-                            val locationFlow = getLocationFlow(context)
+    val currentOnToggleSharing by rememberUpdatedState(onToggleSharing)
 
-                            locationViewModel.startSharingLocation(
-                                locationFlow = locationFlow,
-                                onError = { error ->
-                                    scope.launch(Dispatchers.Main) {
-                                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                                        onToggleSharing(false)
+    Box(modifier = modifier.size(56.dp)) {
+           if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .zIndex(1f)
+                    .background(Color.Transparent)
+            )
+        }
+
+        FloatingActionButton(
+            onClick = {
+                if (isLoading) return@FloatingActionButton
+                isLoading = true
+
+                scope.launch {
+                    try {
+                        if (isSharing) {
+                            locationViewModel.stopSharingLocation()
+                            currentUser?.uid?.let { driverId ->
+                                locationViewModel.clearDriverLocation(driverId)
+                            }
+                            currentOnToggleSharing(false)
+                        } else {
+                            currentUser?.let { user ->
+                                locationViewModel.initializeSharing(user.uid, user.displayName ?: "Conductor")
+                                val locationFlow = getLocationFlow(context)
+
+                                locationViewModel.startSharingLocation(
+                                    locationFlow = locationFlow,
+                                    onError = { error ->
+                                        scope.launch(Dispatchers.Main) {
+                                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                        }
+                                        currentOnToggleSharing(false)
+                                        isLoading = false
                                     }
+                                )
+                                currentOnToggleSharing(true)
+                            } ?: run {
+                                scope.launch(Dispatchers.Main) {
+                                    Toast.makeText(context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
                                 }
-                            )
-
-                            onToggleSharing(true)
-                        } catch (e: Exception) {
-                            scope.launch(Dispatchers.Main) {
-                                Toast.makeText(
-                                    context,
-                                    "Error: ${e.localizedMessage}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onToggleSharing(false)
                             }
                         }
-                    } ?: run {
+                    } catch (e: Exception) {
                         scope.launch(Dispatchers.Main) {
-                            Toast.makeText(context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
-                            onToggleSharing(false)
+                            Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                         }
+                        currentOnToggleSharing(false)
+                    } finally {
+                        isLoading = false
                     }
-                } else {
-                    locationViewModel.stopSharingLocation()
-                    locationViewModel.clearDriverMarker()
-                    onToggleSharing(false)
                 }
-            }
-        },
-        containerColor = if (isSharing) Color.Red else Color(0xFF00933B),
-        modifier = modifier.size(56.dp)
-    ) {
-        Icon(
-            painter = painterResource(
-                id = if (isSharing) R.drawable.ic_app
-                else R.drawable.ic_app
-            ),
-            contentDescription = if (isSharing) "Stop sharing" else "Share location",
-            tint = Color.White,
-            modifier = Modifier.size(24.dp)
-        )
+            },
+            containerColor = if (isSharing) Color.Red else Color(0xFF00933B),
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    alpha = if (isLoading) 0.6f else 1f
+                }
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_app),
+                contentDescription = if (isSharing) "Stop sharing" else "Share location",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }

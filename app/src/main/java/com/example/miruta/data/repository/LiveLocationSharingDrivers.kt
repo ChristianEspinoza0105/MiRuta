@@ -31,7 +31,6 @@ class LiveLocationSharingDrivers @Inject constructor(
                 .collection("live_data")
                 .document("location")
 
-            // Verificar si el documento ya existe
             val snapshot = liveLocationRef?.get()?.await()
 
             val initialData = mapOf(
@@ -42,10 +41,8 @@ class LiveLocationSharingDrivers @Inject constructor(
             )
 
             if (snapshot?.exists() == true) {
-                // Actualizar solo los campos necesarios
                 liveLocationRef?.update(initialData)?.await()
             } else {
-                // Crear nuevo documento
                 liveLocationRef?.set(initialData)?.await()
             }
 
@@ -67,16 +64,37 @@ class LiveLocationSharingDrivers @Inject constructor(
         val docRef = firestore.collection("drivers").document(driverId)
         liveLocationRef = docRef
 
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                docRef.set(
+                    mapOf(
+                        "isActive" to true,
+                        "driverId" to driverId,
+                        "driverName" to driverName,
+                        "lastUpdate" to System.currentTimeMillis()
+                    ),
+                    SetOptions.merge()
+                ).await()
+            } catch (e: Exception) {
+                onError("Error al activar compartir ubicación: ${e.message}")
+            }
+        }
+
         sharingJob = CoroutineScope(Dispatchers.IO).launch {
             locationFlow.collect { location ->
-                val data = mapOf(
-                    "driverId" to driverId,
-                    "driverName" to driverName,
-                    "latitude" to location.latitude,
-                    "longitude" to location.longitude,
-                    "lastUpdate" to System.currentTimeMillis()
-                )
-                docRef.set(data, SetOptions.merge())
+                try {
+                    val data = mapOf(
+                        "driverId" to driverId,
+                        "driverName" to driverName,
+                        "latitude" to location.latitude,
+                        "longitude" to location.longitude,
+                        "isActive" to true,
+                        "lastUpdate" to System.currentTimeMillis()
+                    )
+                    docRef.set(data, SetOptions.merge()).await()
+                } catch (e: Exception) {
+                    //ERROR
+                }
             }
         }
         return sharingJob!!
@@ -108,12 +126,33 @@ class LiveLocationSharingDrivers @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 liveLocationRef?.update(
-                    "isActive", false,
-                    "lastUpdate", System.currentTimeMillis()
+                    mapOf(
+                        "isActive" to false,
+                        "latitude" to FieldValue.delete(),
+                        "longitude" to FieldValue.delete(),
+                        "lastUpdate" to System.currentTimeMillis()
+                    )
                 )?.await()
             } catch (e: Exception) {
-                // Puedes loggear el error si es necesario
             }
         }
     }
+
+    suspend fun stopSharingForDriver(driverId: String) {
+        try {
+            firestore.collection("drivers")
+                .document(driverId)
+                .update(
+                    mapOf(
+                        "isActive" to false,
+                        "latitude" to FieldValue.delete(),
+                        "longitude" to FieldValue.delete(),
+                        "lastUpdate" to System.currentTimeMillis()
+                    )
+                ).await()
+        } catch (e: Exception) {
+            throw Exception("Error al detener la compartición: ${e.message}")
+        }
+    }
+
 }

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2025-06-02T20:14:47.592028700Z">
+        <DropdownSelection timestamp="2025-06-03T07:29:34.053077400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\PC MERA EDITION\.android\avd\Pixel_9_Pro.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\PC MERA EDITION\.android\avd\Small_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -16,11 +16,6 @@
             <Target type="DEFAULT_BOOT">
               <handle>
                 <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CY13M6DJY" />
-              </handle>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\PC MERA EDITION\.android\avd\Pixel_9_Pro.avd" />
               </handle>
             </Target>
           </targets>

@@ -1,9 +1,6 @@
 package com.example.miruta.viewmodel
 
-import android.Manifest
 import android.location.Location
-import android.os.Looper
-import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,13 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.miruta.data.models.DriverLocation
 import com.example.miruta.data.repository.LiveLocationRepository
 import com.example.miruta.data.repository.LiveLocationSharingDrivers
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -59,12 +51,20 @@ class LocationViewModel @Inject constructor(
     }
 
     fun stopSharingLocation() {
-        liveLocationSharing.stopSharing()
+        viewModelScope.launch {
+            liveLocationSharing.stopSharing()
+            driverMarkerPosition = null
+        }
     }
-
     var driverMarkerPosition by mutableStateOf<LatLng?>(null)
 
-    fun clearDriverMarker() {
-        driverMarkerPosition = null
+    fun clearDriverLocation(driverId: String) {
+        viewModelScope.launch {
+            try {
+                liveLocationSharing.stopSharingForDriver(driverId)
+            } catch (e: Exception) {
+                // ERROR
+            }
+        }
     }
 }
