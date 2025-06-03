@@ -517,7 +517,10 @@ fun ExploreScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 properties = MapProperties(isMyLocationEnabled = !isSharingLocation),
-                uiSettings = MapUiSettings(myLocationButtonEnabled = false),
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = false,
+                    zoomControlsEnabled = false
+                ),
             ) {
                 origenLatLng?.let {
                     Marker(
