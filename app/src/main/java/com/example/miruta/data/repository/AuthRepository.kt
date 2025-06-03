@@ -71,6 +71,7 @@ class AuthRepository @Inject constructor(
             }
     }
 
+
     fun addFavoriteLocation(
         userId: String,
         location: FavoriteLocation,
@@ -199,6 +200,7 @@ class AuthRepository @Inject constructor(
                         "name" to name,
                         "phone" to phone,
                         "email" to email,
+
                         "route" to route,
                         "plates" to plates,
                         "role" to "driver",
