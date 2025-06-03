@@ -1,132 +1,157 @@
 package com.example.miruta.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.navigation.NavController
+import com.example.miruta.R
 import com.example.miruta.ui.theme.AppTypography
-import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun RecoverPasswordScreen(navController: NavController) {
-    var email by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var email by remember { mutableStateOf("") }
+    var isFieldFocused by remember { mutableStateOf(false) }
 
-    ConstraintLayout(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF00933B))
+            .background(Color.White)
+            .padding(32.dp)
     ) {
-        val (form) = createRefs()
-
-        Box(
-            modifier = Modifier
-                .constrainAs(form) {
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                    bottom.linkTo(parent.bottom)
-                }
-                .fillMaxWidth()
-                .padding(32.dp)
-                .background(Color.White, RoundedCornerShape(16.dp))
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Image(
+                painter = painterResource(id = R.drawable.ic_email),
+                contentDescription = "Recover Password Icon",
+                modifier = Modifier.size(80.dp)
+            )
+
+            Text(
+                text = "Recover your password",
+                style = AppTypography.h1.copy(fontSize = 24.sp),
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = "Enter your email address to receive a recovery code.",
+                style = AppTypography.body1.copy(fontSize = 18.sp),
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+
+            Box(
                 modifier = Modifier
-                    .padding(24.dp)
                     .fillMaxWidth()
+                    .height(60.dp)
             ) {
-                Text(
-                    text = "Recover Password",
-                    color = Color(0xFF00933B),
-                    style = TextStyle(
-                        fontFamily = AppTypography.headlineMedium.fontFamily,
-                        fontWeight = AppTypography.headlineMedium.fontWeight,
-                        fontSize = 32.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Caja con sombra para el TextField
-                Box(
+                BasicTextField(
+                    value = email,
+                    onValueChange = { newValue ->
+                        email = newValue
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(50))
-                        .background(Color.White, RoundedCornerShape(50))
-                ) {
-                    TextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp), // relleno dentro del borde con sombra
-                        colors = TextFieldDefaults.colors(
-                            cursorColor = Color.Black,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            focusedLabelColor = Color.Black,
-                        ),
-                        shape = RoundedCornerShape(50),
-                        singleLine = true
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        val trimmedEmail = email.trim()
-                        if (trimmedEmail.isEmpty() || !trimmedEmail.contains("@")) {
-                            Toast.makeText(context, "Ingresa un correo válido", Toast.LENGTH_SHORT).show()
-                        } else {
-                            FirebaseAuth.getInstance()
-                                .sendPasswordResetEmail(trimmedEmail)
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        Toast.makeText(
-                                            context,
-                                            "Correo de recuperación enviado",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        navController.popBackStack()
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al enviar correo: ${task.exception?.message}",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
+                        .align(Alignment.Center)
+                        .onFocusChanged { isFieldFocused = it.isFocused },
+                    textStyle = AppTypography.body1.copy(
+                        fontSize = 18.sp,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center
+                    ),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        autoCorrect = false
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (email.isEmpty() && !isFieldFocused) {
+                                Text(
+                                    text = "example@email.com",
+                                    style = AppTypography.body1.copy(
+                                        fontSize = 18.sp,
+                                        color = Color.Gray
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            innerTextField()
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Send Recovery Email",
-                        color = Color.White,
-                        style = AppTypography.titleMedium.copy(fontSize = 24.sp)
-                    )
-                }
+                    }
+                )
+
+                Divider(
+                    color = if (isFieldFocused) Color(0xFF00933B) else Color.LightGray,
+                    thickness = 1.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                )
             }
+
+            Button(
+                onClick = {
+                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Recovery code sent to $email",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        navController.popBackStack()
+                    }
+                },
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF00933B),
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text(
+                    text = "Send Verification Code",
+                    style = AppTypography.h1.copy(fontSize = 18.sp)
+                )
+            }
+
+            Text(
+                text = "Back to login",
+                style = AppTypography.body1.copy(fontSize = 16.sp),
+                color = Color.Gray,
+                modifier = Modifier.clickable {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

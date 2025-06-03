@@ -39,8 +39,9 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 val showBottomBar = currentRoute?.startsWith("chat/") == false &&
-                        currentRoute?.startsWith("routeMap/") == false  &&
-                        currentRoute?.startsWith("live_location_map/") == false
+                        currentRoute?.startsWith("routeMap/") == false &&
+                        currentRoute?.startsWith("live_location_map/") == false &&
+                        currentRoute != "RecoverPasswordScreen"
 
 
                 Scaffold(

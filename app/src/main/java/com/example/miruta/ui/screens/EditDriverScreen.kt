@@ -10,15 +10,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
+import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -27,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.miruta.R
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -36,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -71,12 +69,10 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
     val screenWidth = configuration.screenWidthDp.dp
     val context = LocalContext.current
 
-    // Cargar datos del usuario al iniciar
     LaunchedEffect(Unit) {
         authViewModel.loadDriverData()
     }
 
-    // Observar cambios en el ViewModel y reflejarlos
     LaunchedEffect(authViewModel.userName, authViewModel.userEmail, authViewModel.userPhone, authViewModel.photoIndex, authViewModel.plates, authViewModel.route) {
         name = authViewModel.userName
         phone = authViewModel.userPhone
@@ -119,13 +115,6 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = name,
-                    fontSize = 28.sp,
-                    color = Color.White,
-                    style = AppTypography.headlineLarge,
-                    textAlign = TextAlign.Center
-                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -175,7 +164,7 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                             text = "Editar Perfil",
                             color = Color.Black,
                             fontSize = 24.sp,
-                            style = AppTypography.headlineLarge
+                            style = AppTypography.h1
                         )
                     }
 
@@ -191,17 +180,16 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                             value = name,
                             onValueChange = { name = it },
                             label = {
-                                Text("Nombre", style = AppTypography.bodyLarge.copy(fontSize = 18.sp, color = Color.Gray))
+                                Text("Nombre", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
+                                backgroundColor = Color.White
                             )
                         )
 
@@ -211,20 +199,18 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                             value = phone,
                             onValueChange = { phone = it },
                             label = {
-                                Text("Teléfono", style = AppTypography.bodyLarge.copy(fontSize = 18.sp, color = Color.Gray))
+                                Text("Teléfono", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
+                                backgroundColor = Color.White
                             )
-
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -233,58 +219,17 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                             value = email,
                             onValueChange = { email = it },
                             label = {
-                                Text("Correo electrónico", style = AppTypography.bodyLarge.copy(fontSize = 18.sp, color = Color.Gray))
+                                Text("Correo electrónico", style = AppTypography.body1.copy(fontSize = 18.sp, color = Color.Gray))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(60.dp),
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = Color(0xFF00933B),
                                 unfocusedBorderColor = Color(0xFFE7E7E7),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = plates,
-                            onValueChange = { plates = it },
-                            label = {
-                                Text("Placas", style = AppTypography.bodyLarge.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF00933B),
-                                unfocusedBorderColor = Color(0xFFE7E7E7),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = route,
-                            onValueChange = { route = it },
-                            label = {
-                                Text("Ruta", style = AppTypography.bodyLarge.copy(fontSize = 18.sp, color = Color.Gray))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF00933B),
-                                unfocusedBorderColor = Color(0xFFE7E7E7),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
+                                backgroundColor = Color.White
                             )
                         )
 
@@ -314,16 +259,8 @@ fun EditDriverScreen(navController: NavController, authViewModel: AuthViewModel 
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00933B)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
-                            Text(
-                                text = "Guardar",
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = Color.White
-                            )
+                            Text("Guardar", style = AppTypography.button.copy(fontSize = 20.sp), color = Color.White)
                         }
-
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }

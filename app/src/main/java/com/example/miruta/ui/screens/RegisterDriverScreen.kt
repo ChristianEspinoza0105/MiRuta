@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.TextField
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +35,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -44,23 +46,32 @@ import com.example.miruta.R
 import com.example.miruta.ui.navigation.BottomNavScreen
 import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import com.example.miruta.data.gtfs.parseRoutesFromGTFS
+import com.example.miruta.data.models.Route
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterDriverScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var route by remember { mutableStateOf("") }
     var plates by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var route by remember { mutableStateOf("") }
+
+    var routes by remember { mutableStateOf<List<Route>>(emptyList()) }
+    var expanded by remember { mutableStateOf(false) }
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -69,6 +80,19 @@ fun RegisterDriverScreen(
     val horizontalPadding = (screenWidth.value * 0.1).dp
     val fieldCornerRadius = (screenWidth.value * 0.05).dp
     val textFieldFontSize = (screenWidth.value * 0.04).sp
+
+    LaunchedEffect(Unit) {
+        val list = withContext(Dispatchers.IO) {
+            context.assets.open("rutas_gtfs.zip").use { parseRoutesFromGTFS(it) }
+        }
+        routes = list
+    }
+
+    val routeOptions = remember(routes) {
+        routes.map { route ->
+            "${route.routeShortName} - ${route.routeLongName}"
+        }
+    }
 
     LaunchedEffect(Unit) {
         authViewModel.resetRegisterState()
@@ -240,35 +264,66 @@ fun RegisterDriverScreen(
                     singleLine = true
                 )
 
-
-
-                TextField(
-                    value = route,
-                    onValueChange = { route = it },
-                    label = { Text("Route", fontSize = textFieldFontSize)  },
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = horizontalPadding, vertical = 8.dp)
-                        .shadow(
-                            elevation = 20.dp,
-                            spotColor = Color(0x40000000),
-                            ambientColor = Color(0x40000000)
-                        )
-                        .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
-                    colors = TextFieldDefaults.colors(
-                        cursorColor = Color.Black,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        focusedLabelColor = Color.Black,
+                ) {
+                    TextField(
+                        value = route,
+                        onValueChange = {},
+                        label = { Text("Route", fontSize = textFieldFontSize) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                            .shadow(
+                                elevation = 20.dp,
+                                spotColor = Color(0x40000000),
+                                ambientColor = Color(0x40000000)
+                            )
+                            .background(Color.White, RoundedCornerShape(fieldCornerRadius)),
+                        colors = TextFieldDefaults.colors(
+                            cursorColor = Color.Black,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            focusedLabelColor = Color.Black,
                         ),
-                    shape = RoundedCornerShape(50),
-                    singleLine = true
-                )
+                        shape = RoundedCornerShape(50),
+                        singleLine = true,
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        }
+                    )
 
-
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier
+                            .background(Color.White)
+                    ) {
+                        routeOptions.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = selectionOption,
+                                        fontSize = textFieldFontSize,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                },
+                                onClick = {
+                                    route = selectionOption
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 TextField(
                     value = plates,

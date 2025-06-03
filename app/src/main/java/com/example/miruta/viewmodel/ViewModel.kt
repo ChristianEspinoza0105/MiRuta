@@ -960,7 +960,6 @@ class AuthViewModel @Inject constructor(
             }
     }
 
-
 }
 
 class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {
