@@ -41,18 +41,25 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.miruta.data.gtfs.parseRoutesFromGTFS
@@ -61,10 +68,14 @@ import com.example.miruta.data.models.FavoriteRoute
 import com.example.miruta.data.models.Route
 import com.example.miruta.data.models.Routine
 import com.example.miruta.data.models.RoutineStop
+import com.example.miruta.data.repository.AuthRepository
 import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.components.FavoriteRouteCard
 import com.example.miruta.ui.components.SuccessMessageCard
+import com.example.miruta.ui.navigation.BottomNavScreen
+import com.example.miruta.ui.theme.AppTypography
 import com.example.miruta.ui.viewmodel.AuthViewModel
+import com.example.miruta.ui.viewmodel.AuthViewModelFactory
 import com.example.miruta.util.parseRouteColor
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -98,7 +109,14 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyRouteScreen(navController: NavHostController) {
+fun MyRouteScreen(navController: NavHostController, repository: AuthRepository) {
+    val factory = AuthViewModelFactory(repository)
+    val viewModel: AuthViewModel = viewModel(factory = factory)
+
+    val isUserLoggedIn by viewModel.isUserLoggedIn.collectAsState()
+    val userData by viewModel.userData.collectAsState()
+    val senderName = userData?.get("name")?.toString() ?: "Anónimo"
+
     // Estados para el BottomSheet de Routine
     val routineSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showRoutineSheet by remember { mutableStateOf(false) }
@@ -127,25 +145,83 @@ fun MyRouteScreen(navController: NavHostController) {
 
     val coroutineScope = rememberCoroutineScope()
 
-    Scaffold(
 
-    ) { padding ->
-        Column(
+    if (isUserLoggedIn) {
+        Scaffold() { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            ) {
+                Header()
+                Spacer(modifier = Modifier.height(16.dp))
+                RouteButtons(
+                    onFavoriteClick = {
+                        showFavoriteSheet = true
+                    },
+                    onRoutineClick = {
+                        showRoutineSheet = true
+                    }
+                )
+            }
+        }
+    }else {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+                .background(Color.White)
+                .padding(32.dp)
         ) {
-            Header()
-            Spacer(modifier = Modifier.height(16.dp))
-            RouteButtons(
-                onFavoriteClick = {
-                    showFavoriteSheet = true
-                },
-                onRoutineClick = {
-                    showRoutineSheet = true
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                androidx.compose.material.Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Authentication Required",
+                    tint = Color(0xFF00933B),
+                    modifier = Modifier.size(80.dp)
+                )
+
+                androidx.compose.material.Text(
+                    text = "Your route. Your community.",
+                    style = AppTypography.h1.copy(fontSize = 24.sp),
+                    color = Color.Black,
+                    textAlign = TextAlign.Center
+                )
+
+                androidx.compose.material.Text(
+                    text = "Log in to access routes, chat with other passengers, and get real-time updates.",
+                    style = AppTypography.body1.copy(fontSize = 18.sp),
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+
+                androidx.compose.material.Button(
+                    onClick = {
+                        navController.navigate(BottomNavScreen.Auth(false).route) {
+                            popUpTo(BottomNavScreen.Auth(false).route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    shape = RoundedCornerShape(50),
+                    colors = androidx.compose.material.ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFF00933B),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .height(56.dp)
+                        .widthIn(min = 200.dp)
+                ) {
+                    androidx.compose.material.Text(
+                        text = "Sign in",
+                        style = AppTypography.h1.copy(fontSize = 24.sp)
+                    )
                 }
-            )
+
+            }
         }
     }
 

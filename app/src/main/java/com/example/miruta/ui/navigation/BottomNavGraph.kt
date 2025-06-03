@@ -75,7 +75,7 @@ fun BottomNavGraph(
                 LinesScreen(navController)
             }
             composable(BottomNavScreen.MyRoute.route) {
-                MyRouteScreen(navController)
+                MyRouteScreen(navController, repository = authViewModel.authRepository)
             }
 
             composable("EditProfileScreen") {
