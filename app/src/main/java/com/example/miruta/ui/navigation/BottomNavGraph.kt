@@ -5,12 +5,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.miruta.data.repository.LiveLocationRepository
+import com.example.miruta.data.repository.LiveLocationSharingDrivers
 import com.example.miruta.ui.screens.ChatScreen
 import com.example.miruta.ui.screens.CommunityScreen
 import com.example.miruta.ui.screens.EditDriverScreen
@@ -27,6 +31,9 @@ import com.example.miruta.ui.screens.RegisterDriverScreen
 import com.example.miruta.ui.screens.RegisterScreen
 import com.example.miruta.ui.viewmodel.AuthViewModel
 import com.example.miruta.ui.screens.RecoverPasswordScreen
+import com.example.miruta.viewmodel.LocationViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun BottomNavGraph(
@@ -35,13 +42,27 @@ fun BottomNavGraph(
     authViewModel: AuthViewModel
 ) {
     val isUserLoggedIn by authViewModel.isUserLoggedIn.collectAsState()
+    val locationViewModel: LocationViewModel = hiltViewModel()
+
+    val liveLocationSharing = remember {
+        LiveLocationSharingDrivers(
+            FirebaseFirestore.getInstance(),
+            FirebaseAuth.getInstance()
+        )
+    }
 
     Box(modifier = Modifier) {
         NavHost(navController, startDestination = BottomNavScreen.Explore.route) {
 
             composable(BottomNavScreen.Explore.route) {
-                ExploreScreen()
+                ExploreScreen(
+                    navController = navController,
+                    authViewModel = authViewModel,
+                    locationViewModel = locationViewModel,
+                    liveLocationSharing = liveLocationSharing
+                )
             }
+
             composable(BottomNavScreen.Community.route) {
                 CommunityScreen(navController)
             }

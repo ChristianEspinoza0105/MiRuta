@@ -13,9 +13,9 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class LiveLocationSharing(
-    private val routeId: String,
-    private val senderName: String,
-    private val userId: String
+    private val collectionPath: String,
+    private val documentId: String,
+    private val subcollectionPath: String,
 ) {
     private val firestore = FirebaseFirestore.getInstance()
     private var liveLocationDocId: String? = null
@@ -27,7 +27,7 @@ class LiveLocationSharing(
                 try {
                     if (liveLocationDocId == null) {
                         val docRef = firestore.collection("chats")
-                            .document(routeId)
+                            .document(collectionPath)
                             .collection("messages")
                             .document()
 
@@ -38,15 +38,15 @@ class LiveLocationSharing(
                                 "type" to "live_location",
                                 "latitude" to loc.latitude,
                                 "longitude" to loc.longitude,
-                                "senderId" to userId,
-                                "senderName" to senderName,
+                                "senderId" to subcollectionPath,
+                                "senderName" to documentId,
                                 "timestamp" to FieldValue.serverTimestamp(),
                                 "liveLocationDocId" to docRef.id
                             )
                         ).await()
                     } else {
                         firestore.collection("chats")
-                            .document(routeId)
+                            .document(collectionPath)
                             .collection("messages")
                             .document(liveLocationDocId!!)
                             .update(

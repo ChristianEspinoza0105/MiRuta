@@ -11,7 +11,12 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -103,10 +108,12 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.ui.text.TextStyle
 import com.example.miruta.ui.theme.AppTypography
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
@@ -114,25 +121,94 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.miruta.data.models.DriverLocation
+import com.example.miruta.data.repository.LiveLocationRepository
+import com.example.miruta.data.repository.LiveLocationSharing
+import com.example.miruta.data.repository.LiveLocationSharingDrivers
+import com.example.miruta.ui.components.ActiveDriversMarkers
+import com.example.miruta.ui.components.DriverInfoCard
 import com.example.miruta.ui.components.LoadingSpinner
 import com.example.miruta.ui.theme.PoppinsFontFamily
+import com.example.miruta.ui.viewmodel.AuthViewModel
+import com.example.miruta.utils.getLocationFlow
+import com.example.miruta.viewmodel.LocationViewModel
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.Dot
 import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.RoundCap
+import com.google.firebase.auth.FirebaseAuth
+import com.google.maps.android.compose.rememberMarkerState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import androidx.compose.ui.composed
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ExploreScreen(navController: NavHostController? = null) {
+fun ExploreScreen(
+    navController: NavHostController? = null,
+    authViewModel: AuthViewModel = hiltViewModel(),
+    locationViewModel: LocationViewModel = hiltViewModel(),
+    liveLocationSharing: LiveLocationSharingDrivers = hiltViewModel()
+) {
+    // Estados
+    val userRole by authViewModel.userRole.collectAsState()
+    val isDriver = userRole == "driver"
+    var isSharingLocation by remember { mutableStateOf(false) }
+
+    // Ubicación y conductores
+    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+    val activeDrivers by locationViewModel.activeDrivers.collectAsState()
+    var selectedDriver by remember { mutableStateOf<DriverLocation?>(null) }
+
     val context = LocalContext.current
     val defaultLocation = LatLng(20.659699, -103.349609)
-    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val cameraPositionState = rememberCameraPositionState()
+
+    val locationPermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    val markersState = remember { mutableStateMapOf<String, MarkerState>() }
+
+    LaunchedEffect(activeDrivers) {
+        activeDrivers.forEach { driver ->
+            markersState.getOrPut(driver.driverId) {
+                MarkerState(position = LatLng(driver.latitude, driver.longitude))
+            }.position = LatLng(driver.latitude, driver.longitude)
+        }
+    }
+
+    LaunchedEffect(userLocation) {
+        userLocation?.let {
+            cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(it, 15f))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.checkUserRole()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            locationViewModel.stopSharingLocation()
+            if (isSharingLocation) {
+                liveLocationSharing.stopSharing()
+            }
+        }
+    }
+
     var isLoading by remember { mutableStateOf(true) }
 
     var origen by remember { mutableStateOf("") }
@@ -162,10 +238,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
 
     val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 10f)
-    }
-
     var showRouteSteps by remember { mutableStateOf(false) }
     var selectedItineraryForSteps by remember { mutableStateOf<Itinerary?>(null) }
 
@@ -180,6 +252,7 @@ fun ExploreScreen(navController: NavHostController? = null) {
             !isDestinoFocused &&
             !isLoadingRoute
 
+
     LaunchedEffect(shouldShowBottomSheet) {
         showBottomSheet = shouldShowBottomSheet
         if (shouldShowBottomSheet) {
@@ -188,13 +261,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
             bottomSheetScaffoldState.bottomSheetState.partialExpand()
         }
     }
-
-    val locationPermissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    )
 
     LaunchedEffect(routePlan) {
         if (routePlan != null) {
@@ -382,7 +448,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
         }
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
-
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
@@ -420,6 +485,40 @@ fun ExploreScreen(navController: NavHostController? = null) {
                         }
                     }
                 }
+
+                userLocation?.let {
+                    Marker(
+                        state = MarkerState(position = it),
+                        title = "Mi ubicación",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    )
+                }
+
+                markersState.values.forEach { markerState ->
+                    val driver = activeDrivers.find { driver ->
+                        LatLng(driver.latitude, driver.longitude) == markerState.position
+                    }
+
+                    driver?.let { driverLocation ->
+                        Marker(
+                            state = markerState,
+                            title = driverLocation.driverName,
+                            snippet = "Actualizado: ${formatTime(driverLocation.lastUpdate)}",
+                            onClick = {
+                                selectedDriver = driverLocation
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        markerState.position,
+                                        15f
+                                    )
+                                )
+                                true
+                            },
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
+                        )
+                    }
+                }
+
             }
 
             if (isLoadingRoute) {
@@ -723,7 +822,6 @@ fun ExploreScreen(navController: NavHostController? = null) {
                     }
                 }
 
-
                 errorMessage?.let {
                     Box(
                         modifier = Modifier
@@ -737,8 +835,54 @@ fun ExploreScreen(navController: NavHostController? = null) {
                     }
                 }
             }
+
+            if (isDriver) {
+                SharingLocationFAB(
+                    isSharing = isSharingLocation,
+                    onToggleSharing = { sharing ->
+                        isSharingLocation = sharing
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(horizontal = 20.dp, vertical = 120.dp)
+                )
+            }
+
+            selectedDriver?.let { driver ->
+                DriverInfoCard(
+                    driver = driver,
+                    onDismiss = { selectedDriver = null },
+                    onContactClick = {
+                        navController?.navigate("chat/${driver.driverId}")
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                )
+            }
+
+            errorMessage?.let {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(16.dp)
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.Red
+                    )
+                }
+            }
         }
     }
+}
+
+private fun formatTime(timestamp: Long): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }
 
 private suspend fun getDeviceLocation(context: Context): android.location.Location {
@@ -1353,5 +1497,80 @@ private fun RouteDetailsContent(
 
         Spacer(modifier = Modifier.height(60.dp))
 
+    }
+}
+
+@Composable
+private fun SharingLocationFAB(
+    isSharing: Boolean,
+    onToggleSharing: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val locationViewModel: LocationViewModel = hiltViewModel()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
+    FloatingActionButton(
+        onClick = {
+            scope.launch {
+                if (!isSharing) {
+                    currentUser?.let { user ->
+                        try {
+                            // 1. Inicializar
+                            locationViewModel.initializeSharing(user.uid, user.displayName ?: "Conductor")
+
+                            // 2. Obtener flujo de ubicación
+                            val locationFlow = getLocationFlow(context)
+
+                            // 3. Comenzar a compartir
+                            locationViewModel.startSharingLocation(
+                                locationFlow = locationFlow,
+                                onError = { error ->
+                                    // Si hay error, revertir el estado
+                                    scope.launch(Dispatchers.Main) {
+                                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                        onToggleSharing(false)
+                                    }
+                                }
+                            )
+
+                            // Solo actualizar estado si todo salió bien
+                            onToggleSharing(true)
+                        } catch (e: Exception) {
+                            scope.launch(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Error: ${e.localizedMessage}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onToggleSharing(false)
+                            }
+                        }
+                    } ?: run {
+                        scope.launch(Dispatchers.Main) {
+                            Toast.makeText(context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
+                            onToggleSharing(false)
+                        }
+                    }
+                } else {
+                    // Detener el compartir
+                    locationViewModel.stopSharingLocation()
+                    onToggleSharing(false)
+                }
+            }
+        },
+        containerColor = if (isSharing) Color.Red else Color(0xFF00933B),
+        modifier = modifier.size(56.dp)
+    ) {
+        Icon(
+            painter = painterResource(
+                id = if (isSharing) R.drawable.ic_app
+                else R.drawable.ic_app
+            ),
+            contentDescription = if (isSharing) "Stop sharing" else "Share location",
+            tint = Color.White,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }

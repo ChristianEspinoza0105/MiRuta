@@ -21,6 +21,7 @@ import javax.inject.Inject
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.google.firebase.auth.FirebaseUser
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -41,6 +42,9 @@ class AuthViewModel @Inject constructor(
 
     private val _userData = MutableStateFlow<Map<String, Any>?>(null)
     val userData: StateFlow<Map<String, Any>?> = _userData
+
+    private val _userRole = MutableStateFlow<String?>(null)
+    val userRole: StateFlow<String?> = _userRole
 
     var userName by mutableStateOf("")
         private set
@@ -315,6 +319,32 @@ class AuthViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    //Revisar tipo de usuario
+    fun checkUserRole() {
+        val currentUser = auth.currentUser ?: run {
+            _userRole.value = null
+            return
+        }
+
+        firestore.collection("users").document(currentUser.uid).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    _userRole.value = document.getString("role") ?: "user"
+                } else {
+                    firestore.collection("drivers").document(currentUser.uid).get()
+                        .addOnSuccessListener { driverDoc ->
+                            _userRole.value = driverDoc.getString("role") ?: "driver"
+                        }
+                        .addOnFailureListener {
+                            _userRole.value = null
+                        }
+                }
+            }
+            .addOnFailureListener {
+                _userRole.value = null
+            }
     }
 
     //Cerrar sesión
