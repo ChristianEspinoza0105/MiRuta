@@ -30,12 +30,13 @@ fun LiveLocationMapScreen(
     routeId: String,
     navController: NavHostController
 ) {
-    val context = LocalContext.current
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     var currentLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
     var isLoading by remember { mutableStateOf(true) }
     var isUserOwner by remember { mutableStateOf(false) }
     var documentExists by remember { mutableStateOf(true) }
+    val cameraPositionState = rememberCameraPositionState()
+    cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f))
 
     val docRef = remember {
         FirebaseFirestore.getInstance()
@@ -43,33 +44,6 @@ fun LiveLocationMapScreen(
             .document(routeId)
             .collection("messages")
             .document(liveLocationDocId)
-    }
-
-    val cameraPositionState = rememberCameraPositionState()
-
-    val originalBitmap = remember {
-        val drawable = ContextCompat.getDrawable(context, R.drawable.ic_bus_live)!!
-        val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 100
-        val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 100
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, width, height)
-        drawable.draw(canvas)
-        bitmap
-    }
-
-    fun scaleBitmapForZoom(bitmap: Bitmap, zoom: Float): Bitmap {
-        val minSize = 80f
-        val maxSize = 170f
-        val clampedZoom = zoom.coerceIn(10f, 20f)
-        val scaleFactor = (clampedZoom - 5f) / (20f - 5f)
-        val size = (minSize + scaleFactor * (maxSize - minSize)).toInt()
-        return Bitmap.createScaledBitmap(bitmap, size, size, true)
-    }
-
-    val scaledIcon = remember(cameraPositionState.position.zoom, originalBitmap) {
-        val zoom = cameraPositionState.position.zoom
-        BitmapDescriptorFactory.fromBitmap(scaleBitmapForZoom(originalBitmap, zoom))
     }
 
     LaunchedEffect(liveLocationDocId) {
@@ -82,7 +56,6 @@ fun LiveLocationMapScreen(
                 currentLocation = LatLng(lat, lng)
                 isUserOwner = senderId == currentUserId
                 isLoading = false
-                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f))
             } else {
                 documentExists = false
             }
@@ -112,12 +85,13 @@ fun LiveLocationMapScreen(
         } else {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState
+                cameraPositionState = rememberCameraPositionState().apply {
+                    move(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f))
+                }
             ) {
                 Marker(
-                    state = rememberMarkerState(position = currentLocation),
-                    title = "Ubicación en vivo",
-                    icon = scaledIcon
+                    state = MarkerState(position = currentLocation),
+                    title = "Ubicación en vivo"
                 )
             }
 
