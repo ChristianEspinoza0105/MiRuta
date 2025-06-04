@@ -35,14 +35,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.shadow
 import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Lock
@@ -67,7 +70,6 @@ import com.example.miruta.data.models.FavoriteLocation
 import com.example.miruta.data.models.FavoriteRoute
 import com.example.miruta.data.models.Route
 import com.example.miruta.data.models.Routine
-import com.example.miruta.data.models.RoutineStop
 import com.example.miruta.data.repository.AuthRepository
 import com.example.miruta.ui.components.BottomNavigationBar
 import com.example.miruta.ui.components.FavoriteRouteCard
@@ -86,7 +88,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
-import com.google.android.libraries.places.api.model.LocalTime
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
@@ -104,8 +105,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.example.miruta.data.models.RoutineStop
+import com.example.miruta.data.models.StopInfo
+import com.example.miruta.ui.components.SuccessRoutineMessageCard
+import com.example.miruta.ui.theme.PoppinsFontFamily
+import com.google.android.gms.location.FusedLocationProviderClient
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.time.LocalTime
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -601,37 +611,42 @@ fun CurrentLocationBottomSheetContent(
     }
 }
 
+
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineBottomSheetContent(
     onDismiss: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    //Variables del Dialog
+    // Data class para almacenar la información de cada parada
+    data class StopInfo(
+        val name: String = "",
+        val time: LocalTime? = null,
+        val location: LatLng? = null
+    )
+
+    // Variables del estado
     var showDialog by remember { mutableStateOf(false) }
     var selectedStopIndex by remember { mutableStateOf(-1) }
-    var selectedPlace by remember { mutableStateOf<Place?>(null) }
-    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
-
-
-
-    //Variables de LazyColumn
-    val initialStops = List(6) { "" }
-    var stops by remember { mutableStateOf(initialStops) }
     var routineName by remember { mutableStateOf("") }
+    var stops by remember { mutableStateOf<List<StopInfo>>(List(6) { StopInfo() }) }
 
-    //Variables para el mapa
+    // Variables para el mapa y ubicación
     val context = LocalContext.current
     val defaultLocation = LatLng(20.659699, -103.349609)
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
     var locationName by remember { mutableStateOf("Choose a location in the map") }
     var isLoading by remember { mutableStateOf(true) }
+    var showSuccessRoutineMessage by remember { mutableStateOf(false) }
+    var successDetails by remember { mutableStateOf("") }
+    var successMessage by remember { mutableStateOf("Routine successfully added") }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
     }
 
+    // Función para obtener el nombre de la ubicación
     suspend fun getLocationName(latLng: LatLng): String {
         return try {
             val geocoder = Geocoder(context, Locale.getDefault())
@@ -654,6 +669,7 @@ fun RoutineBottomSheetContent(
         }
     }
 
+    // Efecto para actualizar el nombre de la ubicación cuando cambia
     LaunchedEffect(selectedLocation) {
         selectedLocation?.let { latLng ->
             locationName = "Getting location..."
@@ -661,6 +677,7 @@ fun RoutineBottomSheetContent(
         }
     }
 
+    // Manejo de permisos de ubicación
     val locationPermissionsState = rememberMultiplePermissionsState(
         permissions = listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -668,6 +685,7 @@ fun RoutineBottomSheetContent(
         )
     )
 
+    // Efecto para obtener la ubicación del dispositivo
     LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
         if (locationPermissionsState.allPermissionsGranted) {
             try {
@@ -686,19 +704,46 @@ fun RoutineBottomSheetContent(
         }
     }
 
+    // Diálogo para agregar paradas
     if (showDialog) {
         val timePickerState = rememberTimePickerState()
+        val fusedLocationClient: FusedLocationProviderClient = remember {
+            LocationServices.getFusedLocationProviderClient(context)
+        }
+
+        var userCurrentLocation by remember { mutableStateOf<LatLng?>(null) }
+        val dialogCameraPositionState = rememberCameraPositionState {
+            position = CameraPosition.fromLatLngZoom(LatLng(20.7325, -103.4074), 10f)
+        }
+
+        LaunchedEffect(locationPermissionsState.allPermissionsGranted) {
+            if (locationPermissionsState.allPermissionsGranted) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        location?.let {
+                            val latLng = LatLng(it.latitude, it.longitude)
+                            userCurrentLocation = latLng
+                            dialogCameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+                            selectedLocation = latLng
+                        }
+                    }
+                }
+            }
+        }
 
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { "Add Bus Stop "},
+            title = { Text("Add Bus Stop", style = AppTypography.h2) },
             text = {
-                Column {
-                    // Map view
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
+                            .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(16.dp))
                     ) {
                         if (isLoading) {
@@ -706,7 +751,14 @@ fun RoutineBottomSheetContent(
                         } else {
                             GoogleMap(
                                 modifier = Modifier.fillMaxSize(),
-                                cameraPositionState = cameraPositionState,
+                                cameraPositionState = dialogCameraPositionState,
+                                properties = MapProperties(
+                                    isMyLocationEnabled = locationPermissionsState.allPermissionsGranted
+                                ),
+                                uiSettings = MapUiSettings(
+                                    myLocationButtonEnabled = false,
+                                    zoomControlsEnabled = false
+                                ),
                                 onMapClick = { latLng ->
                                     selectedLocation = latLng
                                 }
@@ -714,22 +766,51 @@ fun RoutineBottomSheetContent(
                                 selectedLocation?.let { latLng ->
                                     Marker(
                                         state = MarkerState(position = latLng),
-                                        title = "Selected Location"
+                                        title = "Selected Location",
+                                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                                     )
                                 }
                             }
                         }
                     }
 
-                    Text(
-                        text = locationName,
-                        modifier = Modifier.padding(8.dp),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                    Spacer(modifier = Modifier.height(16.dp))
+
+
+                    TextField(
+                        value = locationName,
+                        onValueChange = { locationName = it },
+                        label = { Text("Location name:", style = AppTypography.body1) },
+                        modifier = Modifier
+                            .shadow(
+                                elevation = 10.6.dp,
+                                spotColor = Color(0x40000000),
+                                ambientColor = Color(0x40000000)
+                            )
+                            .background(Color.White, RoundedCornerShape(40))
+                            .fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            cursorColor = Color.Black,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            focusedLabelColor = Color.Black,
+                        ),
+                        shape = RoundedCornerShape(50),
+                        singleLine = true,
+                        textStyle = AppTypography.body1
                     )
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Column {
-                        Text("Select time:", modifier = Modifier.padding(bottom = 8.dp))
+                        Text(
+                            "Select time:",
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            style = AppTypography.body1
+                        )
                         TimePicker(
                             state = timePickerState,
                             colors = TimePickerDefaults.colors(
@@ -746,13 +827,16 @@ fun RoutineBottomSheetContent(
                     colors = ButtonDefaults.buttonColors(Color(0xFF00933B)),
                     onClick = {
                         stops = stops.toMutableList().apply {
-                            this[selectedStopIndex] =
-                                "$locationName at ${String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)}"
+                            this[selectedStopIndex] = StopInfo(
+                                name = locationName,
+                                time = LocalTime.of(timePickerState.hour, timePickerState.minute),
+                                location = selectedLocation
+                            )
                         }
                         showDialog = false
                     }
                 ) {
-                    Text("Confirm")
+                    Text("Confirm", style = AppTypography.button)
                 }
             },
             dismissButton = {
@@ -760,17 +844,39 @@ fun RoutineBottomSheetContent(
                     colors = ButtonDefaults.buttonColors(Color(0xFF00933B)),
                     onClick = { showDialog = false }
                 ) {
-                    Text("Cancel")
+                    Text("Cancel", style = AppTypography.button)
                 }
             },
         )
     }
 
-    Column(modifier = Modifier
-        .padding(16.dp)
-        .fillMaxHeight()) {
+    // Contenido principal del BottomSheet
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxHeight()
+    ) {
+        // Mensaje de éxito (movido aquí para que se muestre dentro del BottomSheet)
+        if (showSuccessRoutineMessage) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally)
+                    .zIndex(1f) // Asegura que esté por encima de otros elementos
+            ) {
+                SuccessRoutineMessageCard(
+                    message = successMessage,
+                    details = successDetails,
+                    onDismiss = {
+                        showSuccessRoutineMessage = false
+                        onDismiss() // Cierra el BottomSheet cuando la tarjeta de éxito desaparece
+                    }
+                )
+            }
+        }
+
+        // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
-            //Header
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -784,16 +890,10 @@ fun RoutineBottomSheetContent(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Routine",
-                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            )
+            Text(text = "Routine", style = AppTypography.h2)
             Spacer(modifier = Modifier.weight(1f))
-            Card(
-                modifier = Modifier.align(Alignment.Top),
-                onClick = onDismiss,
-            ) {
-                Box() {
+            Card(modifier = Modifier.align(Alignment.Top), onClick = onDismiss) {
+                Box {
                     Image(
                         painter = painterResource(id = R.drawable.ic_exit),
                         contentDescription = null,
@@ -802,21 +902,24 @@ fun RoutineBottomSheetContent(
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
-        //RT Name button
+
+        // Contenido
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Campo de nombre de la rutina
             TextField(
                 value = routineName,
                 onValueChange = { routineName = it },
-                label = { Text("Add routine name") },
+                label = { Text("Add routine name", style = AppTypography.body1) },
                 modifier = Modifier
                     .shadow(
-                        elevation = 10.600000381469727.dp,
+                        elevation = 10.6.dp,
                         spotColor = Color(0x40000000),
                         ambientColor = Color(0x40000000)
                     )
@@ -832,16 +935,21 @@ fun RoutineBottomSheetContent(
                     focusedLabelColor = Color.Black,
                 ),
                 shape = RoundedCornerShape(50),
-                singleLine = true
+                singleLine = true,
+                textStyle = AppTypography.body1
             )
+
             Spacer(modifier = Modifier.height(16.dp))
-            //Stops buttons
+
+            // Lista de paradas
             Text(
                 modifier = Modifier.align(alignment = Alignment.Start),
                 text = "Stops:",
-                style = TextStyle(fontSize = 16.sp)
+                style = AppTypography.h2
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Box(
                 modifier = Modifier
                     .height(200.dp)
@@ -865,7 +973,7 @@ fun RoutineBottomSheetContent(
                         )
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Flecha vertical",
+                            contentDescription = "Vertical arrow",
                             tint = Color(0xFF00933B),
                             modifier = Modifier
                                 .width(24.dp)
@@ -874,12 +982,9 @@ fun RoutineBottomSheetContent(
                         )
                     }
 
-                    // LazyColumn con los campos de texto
-                    LazyColumn(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        itemsIndexed(stops) { index, stopText ->
-
+                    // Lista de paradas
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        itemsIndexed(stops) { index, stopInfo ->
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -887,14 +992,17 @@ fun RoutineBottomSheetContent(
                                     .background(Color.White)
                                     .clickable {
                                         selectedStopIndex = index
+                                        selectedLocation = stopInfo.location
                                         showDialog = true
                                     }
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Text(
-                                    text = if (stopText.isEmpty()) "Click to add stop" else stopText,
-                                    color = if (stopText.isEmpty()) LocalContentColor.current.copy(alpha = 1f)
+                                    text = if (stopInfo.name.isEmpty()) "Click to add stop"
+                                    else "${stopInfo.name} at ${stopInfo.time?.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                                    color = if (stopInfo.name.isEmpty()) LocalContentColor.current.copy(alpha = 1f)
                                     else LocalContentColor.current,
+                                    style = AppTypography.body1,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -903,15 +1011,15 @@ fun RoutineBottomSheetContent(
                     }
                 }
             }
+
+            // Botón para agregar más paradas
             Box(
                 modifier = Modifier
                     .background(color = Color.White, shape = RoundedCornerShape(50))
                     .align(alignment = Alignment.End)
-            ){
+            ) {
                 IconButton(
-                    onClick = {
-                        stops = stops + ""
-                    },
+                    onClick = { stops = stops + StopInfo() },
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
@@ -922,26 +1030,35 @@ fun RoutineBottomSheetContent(
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Botón para guardar la rutina
         Row(modifier = Modifier.align(alignment = Alignment.CenterHorizontally)) {
             Button(
                 onClick = {
-                    if (routineName.isNotEmpty() && stops.any { it.isNotEmpty() }) {
+                    if (routineName.isNotEmpty() && stops.any { it.name.isNotEmpty() }) {
+                        val routineStops = stops.filter { it.name.isNotEmpty() }.map { stopInfo ->
+                            RoutineStop(
+                                locationName = stopInfo.name,
+                                time = stopInfo.time?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "00:00",
+                                latitude = stopInfo.location?.latitude ?: 0.0,
+                                longitude = stopInfo.location?.longitude ?: 0.0
+                            )
+                        }
+
                         val routine = Routine(
                             name = routineName,
-                            stops = stops.filter { it.isNotEmpty() }.map { stopText ->
-
-                                RoutineStop(
-                                    locationName = stopText,
-                                    time = "00:00",
-                                    latitude = 0.0,
-                                    longitude = 0.0
-                                )
-                            },
+                            stops = routineStops,
                             userId = viewModel.auth.currentUser?.uid ?: ""
                         )
+
                         viewModel.addRoutine(routine)
-                        onDismiss()
+                        successMessage = "Routine successfully added"
+                        successDetails = "${routine.name} with ${routine.stops.size} stops"
+                        showSuccessRoutineMessage = true
+                        // REMOVIDO: onDismiss()
+                        // La tarjeta de éxito se encargará de llamar a onDismiss() cuando termine su animación.
                     }
                 },
                 shape = RoundedCornerShape(50),
@@ -949,13 +1066,11 @@ fun RoutineBottomSheetContent(
                 modifier = Modifier
                     .height(66.dp)
                     .width(204.dp),
-
-                ) {
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    //Add Button
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -968,20 +1083,15 @@ fun RoutineBottomSheetContent(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    Text(
-                        text = "Add routine",
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontFamily = FontFamily(Font(R.font.poppins_bold)),
-                            fontWeight = FontWeight(600),
-                            color = Color(0xFFFFFFFF)
-                        )
-                    )
+                    Text(text = "Add routine", style = TextStyle(fontFamily = PoppinsFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp))
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun FavoriteBottomSheetContent(
