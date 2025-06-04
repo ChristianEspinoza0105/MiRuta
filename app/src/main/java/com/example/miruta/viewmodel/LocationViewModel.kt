@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,6 +35,13 @@ class LocationViewModel @Inject constructor(
 
     val activeDrivers: StateFlow<List<DriverLocation>> =
         locationRepository.getActiveDrivers()
+            .onEach { drivers ->
+                drivers.forEach { driver ->
+                    println("DRIVER_UPDATE - ID: ${driver.driverId}, " +
+                            "Lat: ${driver.latitude}, Lon: ${driver.longitude}, " +
+                            "Bearing: ${driver.bearing}, Time: ${driver.lastUpdate}")
+                }
+            }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -44,10 +52,18 @@ class LocationViewModel @Inject constructor(
         locationFlow: Flow<Location>,
         onError: (String) -> Unit
     ) {
-        liveLocationSharing.startSharing(
-            locationFlow = locationFlow,
-            onError = onError
-        )
+        locationFlow
+            .onEach { location ->
+                println("MY_LOCATION_UPDATE - Lat: ${location.latitude}, " +
+                        "Lon: ${location.longitude}, " +
+                        "Bearing: ${location.bearing ?: 0f}")
+            }
+            .let { flow ->
+                liveLocationSharing.startSharing(
+                    locationFlow = flow,
+                    onError = onError
+                )
+            }
     }
 
     fun stopSharingLocation() {

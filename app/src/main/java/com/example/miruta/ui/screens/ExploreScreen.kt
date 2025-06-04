@@ -8,6 +8,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.flow.collect
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -114,6 +115,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -140,6 +142,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -181,9 +184,8 @@ fun ExploreScreen(
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val cameraPositionState = rememberCameraPositionState()
-
+    val markerStates = remember { mutableStateMapOf<String, MarkerState>() }
     val markersState = remember { mutableStateMapOf<String, MarkerState>() }
-
 
     LaunchedEffect(cameraPositionState.position.target) {
         if (!allowedBounds.contains(cameraPositionState.position.target)) {
@@ -915,27 +917,40 @@ fun ExploreScreen(
                 ),
             ) {
 
-                driverMarkers.forEach { (driverId, data) ->
-                    val (position, icon) = data
-                    val driver = activeDrivers.find { it.driverId == driverId }
+                activeDrivers.forEach { driver ->
+                    val position = LatLng(driver.latitude, driver.longitude)
+                    println("MARKER_UPDATE - DriverID: ${driver.driverId}, " +
+                            "Position: $position, " +
+                            "Time: ${System.currentTimeMillis()}")
 
-                    key(driverId) {
-                        Marker(
-                            state = rememberMarkerState(position = position),
-                            title = driver?.driverName ?: "Conductor",
-                            snippet = driver?.let { "Actualizado: ${formatTime(it.lastUpdate)}" },
-                            onClick = {
-                                driver?.let {
-                                    selectedDriver = it
-                                    cameraPositionState.move(
-                                        CameraUpdateFactory.newLatLngZoom(position, 15f)
-                                    )
-                                }
-                                true
-                            },
-                            icon = icon
-                        )
+                    val bearing = driver.bearing ?: 0f
+
+                    // Crear o actualizar el estado del marcador
+                    val markerState = rememberMarkerState(
+                        position = LatLng(driver.latitude, driver.longitude)
+                    )
+
+                    // Actualizar la posición y rotación
+                    LaunchedEffect(position) {
+                        markerState.position = position
                     }
+
+                    // Rotación del ícono
+                    val rotatedBitmap = rotateBitmap(originalBitmap, bearing)
+                    val scaledBitmap = scaleBitmapForZoom(rotatedBitmap, cameraPositionState.position.zoom)
+                    val icon = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+
+                    Marker(
+                        state = markerState,
+                        title = driver.driverName ?: "Conductor",
+                        snippet = "Actualizado: ${formatTime(driver.lastUpdate)}",
+                        onClick = {
+                            selectedDriver = driver
+                            cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(position, 15f))
+                            true
+                        },
+                        icon = icon
+                    )
                 }
             }
 
