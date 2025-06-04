@@ -566,6 +566,45 @@ fun ExploreScreen(
                         }
                     }
 
+                    activeDrivers.forEach { driver ->
+                        val position = LatLng(driver.latitude, driver.longitude)
+                        val bearing = driver.bearing ?: 0f
+
+                        val markerState = rememberMarkerState(position = position)
+
+                        LaunchedEffect(position) {
+                            markerState.position = position
+                        }
+
+                        val rotatedBitmap = rotateBitmap(originalBitmap, bearing)
+                        val scaledBitmap = scaleBitmapForZoom(rotatedBitmap, cameraPositionState.position.zoom)
+                        val icon = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+
+                        Marker(
+                            state = markerState,
+                            title = driver.driverName ?: "Conductor",
+                            snippet = "Actualizado: ${formatTime(driver.lastUpdate)}",
+                            onClick = {
+                                selectedDriver = driver
+                                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(position, 15f))
+                                true
+                            },
+                            icon = icon
+                        )
+                    }
+                }
+
+                selectedDriver?.let { driver ->
+                    DriverInfoCard(
+                        driver = driver,
+                        onDismiss = { selectedDriver = null },
+                        onContactClick = {
+                            navController?.navigate("chat/${driver.driverId}")
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(16.dp)
+                    )
                 }
 
                 if (isLoadingRoute) {
@@ -925,17 +964,14 @@ fun ExploreScreen(
 
                     val bearing = driver.bearing ?: 0f
 
-                    // Crear o actualizar el estado del marcador
                     val markerState = rememberMarkerState(
                         position = LatLng(driver.latitude, driver.longitude)
                     )
 
-                    // Actualizar la posición y rotación
                     LaunchedEffect(position) {
                         markerState.position = position
                     }
 
-                    // Rotación del ícono
                     val rotatedBitmap = rotateBitmap(originalBitmap, bearing)
                     val scaledBitmap = scaleBitmapForZoom(rotatedBitmap, cameraPositionState.position.zoom)
                     val icon = BitmapDescriptorFactory.fromBitmap(scaledBitmap)
